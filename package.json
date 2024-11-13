@@ -4,10 +4,9 @@
   "version": "0.0.0",
   "type": "module",
  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  "dev": "vite",
+  "build": "tsc && vite build",
+  "preview": "vite preview --host --port 4173"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

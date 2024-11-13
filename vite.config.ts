@@ -10,16 +10,13 @@ export default defineConfig({
     },
   },
   server: {
-    host: true,
-    port: 5173,
-    strictPort: true,
-    watch: {
-      usePolling: true
-    }
+    host: '0.0.0.0',
+    port: 4173,
+    strictPort: true
   },
   preview: {
-    port: 5173,
-    host: true,
+    host: '0.0.0.0',
+    port: 4173,
     strictPort: true
   }
 });
