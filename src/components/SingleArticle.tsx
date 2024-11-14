@@ -57,6 +57,10 @@ export default function SingleArticle({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleCardTitleClick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto">
       <Button variant="ghost" onClick={onBack} className="mb-4">
@@ -122,7 +126,7 @@ export default function SingleArticle({
                           className="w-20 h-20 object-cover rounded"
                         />
                         <div className="flex-1">
-                          <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                          <h3 onClick={handleCardTitleClick} className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
                             {relatedArticle.title}
                           </h3>
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
