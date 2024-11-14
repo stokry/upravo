@@ -68,7 +68,7 @@ export default function SingleArticle({
         {/* Main Content */}
         <div className="lg:col-span-8 space-y-6">
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold leading-tight">{article.title}</h1>
+            <h1 className="text-4xl font-bold leading-tight sm:text-2xl">{article.title}</h1>
             <div className="flex items-center gap-4">
               <Badge variant="secondary">{article.category_name}</Badge>
               <span className="text-sm text-muted-foreground flex items-center">
