@@ -1,6 +1,6 @@
 "use client"
 
-import { Newspaper } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import NewsGrid from './NewsGrid';
 import SingleArticle from './SingleArticle';
@@ -332,17 +332,20 @@ export default function NewsPortal() {
     )}
   </Helmet>
 
-    <div className="min-h-screen bg-background font-mono">
+    <div className="min-h-screen bg-background font-sans">
       <div className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">
         <header className="sticky top-0 bg-background border-b z-10 pb-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div 
-              className="flex items-center space-x-2 cursor-pointer" 
-              onClick={() => handleCategoryChange('All')}
-            >
-              <Newspaper className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold tracking-tight">Vijesti Uživo</h1>
-            </div>
+        <div className="flex items-center justify-between">
+    <div 
+      className="flex items-center space-x-2 cursor-pointer" 
+      onClick={() => handleCategoryChange('All')}
+    >
+      <img 
+        src="/logo.svg" 
+        alt="Vijesti Uživo Logo" 
+        className="h-11 w-auto" // Adjust size as needed
+      />
+    </div>
             <LiveBadge />
           </div>
 

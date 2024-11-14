@@ -20,6 +20,11 @@ module.exports = {
         sans: ['Instrument Sans', 'sans-serif'],
       },
       colors: {
+        brand: {
+          DEFAULT: '#800059',
+          light: '#a3006f',  // lighter shade
+          dark: '#5c0040',   // darker shade
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

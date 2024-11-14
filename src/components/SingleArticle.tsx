@@ -16,11 +16,14 @@ interface SingleArticleProps {
 // Helper function for creating URL-friendly slugs
 function createSlug(text: string): string {
   return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  .toLowerCase()
+  .normalize("NFD") // Decompose characters with accents
+  .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+  .trim()
+  .replace(/[^\w\s-]/g, '') // Remove any remaining non-word characters except whitespace and hyphens
+  .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+  .replace(/^-+|-+$/g, ''); // Trim any leading or trailing hyphens
+
 }
 
 export default function SingleArticle({ 
