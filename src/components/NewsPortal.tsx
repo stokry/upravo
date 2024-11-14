@@ -188,39 +188,69 @@ export default function NewsPortal() {
   useEffect(() => {
     const path = location.pathname.split('/').filter(Boolean);
     
-    if (path.length === 0) {
-      if (selectedCategory !== 'Sve') {
-        setSelectedCategory('Sve');
-        setNewsItems([]);
-        loadedIds.current.clear();
-        setPage(1);
-      }
-    } else if (path.length === 1) {
-      const category = getCategoryFromSlug(path[0]);
-      if (category && category !== selectedCategory) {
-        setSelectedCategory(category);
-        setSelectedArticle(null);
-        setNewsItems([]);
-        loadedIds.current.clear();
-        setPage(1);
-      } else if (!category) {
-        navigate('/');
-      }
-    } else if (path.length === 2) {
-      const category = getCategoryFromSlug(path[0]);
-      if (category && newsItems.length > 0) {
-        const article = newsItems.find(item => 
-          createSlug(item.category_name) === path[0] && 
-          createSlug(item.title) === path[1]
-        );
+    const loadArticleFromUrl = async () => {
+      if (path.length === 2) {
+        const categoryName = path[0];
+        const articleSlug = path[1];
         
-        if (article) {
-          setSelectedArticle(article);
+        // If we already have the article loaded, don't fetch again
+        if (newsItems.length > 0) {
+          const article = newsItems.find(item => 
+            createSlug(item.category_name) === categoryName && 
+            createSlug(item.title) === articleSlug
+          );
+          
+          if (article) {
+            setSelectedArticle(article);
+            setSelectedCategory(article.category_name as CategoryType);
+            return;
+          }
+        }
+        
+        // If we don't have the article, fetch it
+        try {
+          const baseUrl = 'https://kibfdaxeegvddusnknfs.supabase.co/rest/v1/articles';
+          const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpYmZkYXhlZWd2ZGR1c25rbmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQzMTQ2NzMsImV4cCI6MjAzOTg5MDY3M30.l9HjERTXw_8mAqzIOkv8vck82CBbh2wPiZ_pS96k7Mg';
+          
+          const params = new URLSearchParams({
+            apikey: apiKey,
+          });
+  
+          const response = await fetch(`${baseUrl}?${params}`);
+          if (!response.ok) throw new Error('Failed to fetch news');
+          const data = await response.json() as NewsItem[];
+          
+          const article = data.find(item => 
+            createSlug(item.category_name) === categoryName && 
+            createSlug(item.title) === articleSlug
+          );
+          
+          if (article) {
+            setSelectedArticle(article);
+            setSelectedCategory(article.category_name as CategoryType);
+            setNewsItems(data);
+          } else {
+            throw new Error('Article not found');
+          }
+        } catch (err) {
+          console.error('Error loading article:', err);
+          navigate('/');
+        }
+      } else if (path.length === 1) {
+        // Handle category URL
+        const category = getCategoryFromSlug(path[0]);
+        if (category && category !== selectedCategory) {
           setSelectedCategory(category);
+          setSelectedArticle(null);
+          setNewsItems([]);
+          loadedIds.current.clear();
+          setPage(1);
         }
       }
-    }
-  }, [location.pathname]);
+    };
+  
+    loadArticleFromUrl();
+  }, [location.pathname, newsItems]);
 
   const handleCategoryChange = (category: CategoryType) => {
     if (category === selectedCategory) return;
@@ -240,16 +270,20 @@ export default function NewsPortal() {
   };
 
   const handleNewsClick = (article: NewsItem) => {
-    setSelectedArticle(article);
     const categorySlug = createSlug(article.category_name);
     const titleSlug = createSlug(article.title);
     navigate(`/${categorySlug}/${titleSlug}`);
+    setSelectedArticle(article);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBack = () => {
     setSelectedArticle(null);
-    navigate(selectedCategory === 'Sve' ? '/' : `/${createSlug(selectedCategory)}`);
+    if (selectedCategory === 'Sve') {
+      navigate('/');
+    } else {
+      navigate(`/${createSlug(selectedCategory)}`);
+    }
   };
 
   // Effect for fetching news on category or page changes
