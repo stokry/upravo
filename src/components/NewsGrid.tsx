@@ -16,6 +16,12 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
   const otherArticles = news.slice(1);
 
   if (!mainArticle) return null;
+  const handleArticleClick = (article: NewsItem) => {
+    // Scroll to top before handling the click
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    onNewsClick(article);
+  };
+
 
   return (
     <div className="space-y-6">
@@ -24,7 +30,7 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
         <div className="col-span-1 lg:col-span-2">
           <Card
             className="cursor-pointer transform transition-all duration-500 hover:shadow-lg border-l-4 border-l-primary group"
-            onClick={() => onNewsClick(mainArticle)}
+            onClick={() => handleArticleClick(mainArticle)}
           >
             <CardHeader className="pb-2">
               <div className="flex flex-col justify-between items-start gap-2">
@@ -70,7 +76,7 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
             <Card
               key={article.id}
               className="cursor-pointer transform transition-all duration-500 hover:shadow-lg group"
-              onClick={() => onNewsClick(article)}
+              onClick={() => handleArticleClick(mainArticle)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start gap-4">
@@ -107,7 +113,7 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
           <Card
             key={article.id}
             className="cursor-pointer transform transition-all duration-500 hover:shadow-lg group"
-            onClick={() => onNewsClick(article)}
+            onClick={() => handleArticleClick(mainArticle)}
             ref={index === otherArticles.length - 1 ? lastElementRef : null}
           >
             <CardHeader className="pb-2">
