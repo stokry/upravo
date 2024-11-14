@@ -33,8 +33,8 @@ const PREDEFINED_CATEGORIES = [
   'Zdravlje'
 ] as const;
 
-type CategoryType = typeof PREDEFINED_CATEGORIES[number] | 'All';
-const categories: CategoryType[] = ['All', ...PREDEFINED_CATEGORIES];
+type CategoryType = typeof PREDEFINED_CATEGORIES[number] | 'Sve';
+const categories: CategoryType[] = ['Sve', ...PREDEFINED_CATEGORIES];
 
 interface LiveBadgeProps {
   className?: string;
@@ -53,7 +53,7 @@ function createSlug(text: string): string {
 
 // Helper to convert slug back to category name
 function getCategoryFromSlug(slug: string): CategoryType | null {
-  if (!slug) return 'All';
+  if (!slug) return 'Sve';
   
   const exactMatch = PREDEFINED_CATEGORIES.find(
     cat => createSlug(cat) === slug
@@ -99,7 +99,7 @@ export default function NewsPortal() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('Sve');
   const [selectedArticle, setSelectedArticle] = useState<NewsItem | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -119,7 +119,7 @@ export default function NewsPortal() {
         offset: ((pageNumber - 1) * 12).toString(),
       });
 
-      if (selectedCategory === 'All') {
+      if (selectedCategory === 'Sve') {
         const categoriesQuery = PREDEFINED_CATEGORIES.map(cat => `"${cat}"`).join(',');
         params.append('category_name', `in.(${categoriesQuery})`);
       } else {
@@ -132,7 +132,7 @@ export default function NewsPortal() {
       
       const newItems = data.filter(item => 
         !loadedIds.current.has(item.id) && 
-        (selectedCategory === 'All' ? PREDEFINED_CATEGORIES.includes(item.category_name as typeof PREDEFINED_CATEGORIES[number]) : true)
+        (selectedCategory === 'Sve' ? PREDEFINED_CATEGORIES.includes(item.category_name as typeof PREDEFINED_CATEGORIES[number]) : true)
       );
       
       newItems.forEach(item => loadedIds.current.add(item.id));
@@ -155,19 +155,19 @@ export default function NewsPortal() {
 
   const getPageTitle = useCallback(() => {
     if (selectedArticle) {
-      return `${selectedArticle.title} | Vijesti Uživo`;
+      return `${selectedArticle.title} | Brzi.info`;
     }
-    if (selectedCategory !== 'All') {
-      return `${selectedCategory} Vijesti | Vijesti Uživo`;
+    if (selectedCategory !== 'Sve') {
+      return `${selectedCategory} Vijesti | Brzi.info`;
     }
-    return 'Vijesti Uživo | Najnovije vijesti';
+    return 'Brzi.info | Najnovije vijesti';
   }, [selectedArticle, selectedCategory]);
 
   const getMetaDescription = useCallback(() => {
     if (selectedArticle) {
       return generateMetaDescription(selectedArticle.content);
     }
-    if (selectedCategory !== 'All') {
+    if (selectedCategory !== 'Sve') {
       return `Najnovije vijesti iz kategorije ${selectedCategory}. Pratite najnovije vijesti i događanja uživo.`;
     }
     return 'Pratite najnovije vijesti i događanja uživo na Vijesti Uživo - vaš izvor za najnovije vijesti iz Hrvatske i svijeta.';
@@ -178,7 +178,7 @@ export default function NewsPortal() {
     if (selectedArticle) {
       return `${baseUrl}/${createSlug(selectedArticle.category_name)}/${createSlug(selectedArticle.title)}`;
     }
-    if (selectedCategory !== 'All') {
+    if (selectedCategory !== 'Sve') {
       return `${baseUrl}/${createSlug(selectedCategory)}`;
     }
     return baseUrl;
@@ -189,8 +189,8 @@ export default function NewsPortal() {
     const path = location.pathname.split('/').filter(Boolean);
     
     if (path.length === 0) {
-      if (selectedCategory !== 'All') {
-        setSelectedCategory('All');
+      if (selectedCategory !== 'Sve') {
+        setSelectedCategory('Sve');
         setNewsItems([]);
         loadedIds.current.clear();
         setPage(1);
@@ -232,7 +232,7 @@ export default function NewsPortal() {
     setHasMore(true);
     setSelectedCategory(category);
 
-    if (category === 'All') {
+    if (category === 'Sve') {
       navigate('/');
     } else {
       navigate(`/${createSlug(category)}`);
@@ -249,7 +249,7 @@ export default function NewsPortal() {
 
   const handleBack = () => {
     setSelectedArticle(null);
-    navigate(selectedCategory === 'All' ? '/' : `/${createSlug(selectedCategory)}`);
+    navigate(selectedCategory === 'Sve' ? '/' : `/${createSlug(selectedCategory)}`);
   };
 
   // Effect for fetching news on category or page changes
@@ -281,14 +281,14 @@ export default function NewsPortal() {
     <meta property="og:title" content={getPageTitle()} />
     <meta property="og:description" content={getMetaDescription()} />
     <meta property="og:url" content={getCurrentUrl()} />
-    <meta property="og:site_name" content="Vijesti Uživo" />
+    <meta property="og:site_name" content="Brzi.info" />
 
     {selectedArticle && (
       <>
         <meta property="og:image" content={selectedArticle.image_url} />
         <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
         <meta property="article:section" content={selectedArticle.category_name} />
-        <meta property="article:author" content="Vijesti Uživo" />
+        <meta property="article:author" content="Brzi.info" />
         
         <script type="application/ld+json">
           {JSON.stringify({
@@ -301,11 +301,11 @@ export default function NewsPortal() {
             "dateModified": new Date(selectedArticle.date_unparsed).toISOString(),
             "author": {
               "@type": "Organization",
-              "name": "Vijesti Uživo"
+              "name": "Brzi.info"
             },
             "publisher": {
               "@type": "Organization",
-              "name": "Vijesti Uživo",
+              "name": "Brzi.info",
               "logo": {
                 "@type": "ImageObject",
                 "url": `${window.location.origin}/logo.png`
@@ -327,7 +327,7 @@ export default function NewsPortal() {
 
     <meta name="robots" content="index, follow" />
     <meta name="language" content="Croatian" />
-    {selectedCategory !== 'All' && (
+    {selectedCategory !== 'Sve' && (
       <meta name="keywords" content={`vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`} />
     )}
   </Helmet>
@@ -338,11 +338,11 @@ export default function NewsPortal() {
         <div className="flex items-center justify-between">
     <div 
       className="flex items-center space-x-2 cursor-pointer" 
-      onClick={() => handleCategoryChange('All')}
+      onClick={() => handleCategoryChange('Sve')}
     >
       <img 
         src="/logo.svg" 
-        alt="Vijesti Uživo Logo" 
+        alt="Brzi.info Logo" 
         className="h-11 w-auto" // Adjust size as needed
       />
     </div>
