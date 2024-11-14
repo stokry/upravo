@@ -36,7 +36,7 @@ export default function SingleArticle({
     const categorySlug = createSlug(relatedArticle.category_name);
     const titleSlug = createSlug(relatedArticle.title);
     navigate(`/${categorySlug}/${titleSlug}`);
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (

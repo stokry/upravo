@@ -244,6 +244,7 @@ export default function NewsPortal() {
     const categorySlug = createSlug(article.category_name);
     const titleSlug = createSlug(article.title);
     navigate(`/${categorySlug}/${titleSlug}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBack = () => {
