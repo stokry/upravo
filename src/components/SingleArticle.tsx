@@ -1,4 +1,4 @@
-import { ArrowLeft, Clock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
