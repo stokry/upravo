@@ -303,67 +303,81 @@ export default function NewsPortal() {
       return () => observer.disconnect();
     }
   }, [isLoading, hasMore]);
-
+  useEffect(() => {
+    if (selectedArticle) {
+      document.title = getPageTitle();
+    }
+  }, [selectedArticle, getPageTitle]);
   return (
     <>
     <Helmet>
     <title>{getPageTitle()}</title>
-    <meta name="description" content={getMetaDescription()} />
-    <link rel="canonical" href={getCurrentUrl()} />
+  <meta name="title" content={getPageTitle()} />
+  <meta name="description" content={getMetaDescription()} />
+  <link rel="canonical" href={getCurrentUrl()} />
+  
+  {/* Keywords */}
+  <meta name="keywords" content={
+    selectedArticle 
+      ? `vijesti, ${selectedArticle.category_name.toLowerCase()}, hrvatska, novosti, ${selectedArticle.title.toLowerCase()}`
+      : selectedCategory !== 'Sve'
+      ? `vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`
+      : 'vijesti, hrvatska, najnovije vijesti, uživo, novosti, svijet, regija'
+  } />
 
     <meta property="og:type" content={selectedArticle ? 'article' : 'website'} />
-    <meta property="og:title" content={getPageTitle()} />
-    <meta property="og:description" content={getMetaDescription()} />
-    <meta property="og:url" content={getCurrentUrl()} />
-    <meta property="og:site_name" content="Brzi.info" />
+  <meta property="og:title" content={getPageTitle()} />
+  <meta property="og:description" content={getMetaDescription()} />
+  <meta property="og:url" content={getCurrentUrl()} />
+  <meta property="og:site_name" content="Brzi.info" />
+  <meta property="og:locale" content="hr_HR" />
+  
+  {/* Twitter */}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content={getCurrentUrl()} />
+  <meta name="twitter:title" content={getPageTitle()} />
+  <meta name="twitter:description" content={getMetaDescription()} />
 
     {selectedArticle && (
-      <>
-        <meta property="og:image" content={selectedArticle.image_url} />
-        <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
-        <meta property="article:section" content={selectedArticle.category_name} />
-        <meta property="article:author" content="Brzi.info" />
-        
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "NewsArticle",
-            "headline": selectedArticle.title,
-            "description": generateMetaDescription(selectedArticle.content),
-            "image": selectedArticle.image_url,
-            "datePublished": new Date(selectedArticle.date_unparsed).toISOString(),
-            "dateModified": new Date(selectedArticle.date_unparsed).toISOString(),
-            "author": {
-              "@type": "Organization",
-              "name": "Brzi.info"
-            },
-            "publisher": {
-              "@type": "Organization",
-              "name": "Brzi.info",
-              "logo": {
-                "@type": "ImageObject",
-                "url": `${window.location.origin}/logo.png`
-              }
-            },
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": getCurrentUrl()
+    <>
+      <meta property="og:image" content={selectedArticle.image_url} />
+      <meta name="twitter:image" content={selectedArticle.image_url} />
+      <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
+      <meta property="article:section" content={selectedArticle.category_name} />
+      <meta property="article:author" content="Brzi.info" />
+      
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "NewsArticle",
+          "headline": selectedArticle.title,
+          "description": generateMetaDescription(selectedArticle.content),
+          "image": selectedArticle.image_url,
+          "datePublished": new Date(selectedArticle.date_unparsed).toISOString(),
+          "dateModified": new Date(selectedArticle.date_unparsed).toISOString(),
+          "author": {
+            "@type": "Organization",
+            "name": "Brzi.info"
+          },
+          "publisher": {
+            "@type": "Organization",
+            "name": "Brzi.info",
+            "logo": {
+              "@type": "ImageObject",
+              "url": `${window.location.origin}/logo.svg`
             }
-          })}
-        </script>
+          },
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": getCurrentUrl()
+          }
+        })}
+      </script>
+
       </>
     )}
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={getPageTitle()} />
-    <meta name="twitter:description" content={getMetaDescription()} />
-    {selectedArticle && <meta name="twitter:image" content={selectedArticle.image_url} />}
 
-    <meta name="robots" content="index, follow" />
-    <meta name="language" content="Croatian" />
-    {selectedCategory !== 'Sve' && (
-      <meta name="keywords" content={`vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`} />
-    )}
   </Helmet>
 
     <div className="min-h-screen bg-background font-sans">
