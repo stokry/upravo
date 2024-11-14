@@ -1,10 +1,10 @@
-
 import { ArrowLeft, Clock, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NewsItem } from '@/types/news';
 import { getTimeAgo } from '@/utils/date';
+import { useNavigate } from 'react-router-dom';
 
 interface SingleArticleProps {
   article: NewsItem;
@@ -13,12 +13,32 @@ interface SingleArticleProps {
   setSelectedArticle: (article: NewsItem) => void;
 }
 
+// Helper function for creating URL-friendly slugs
+function createSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 export default function SingleArticle({ 
   article, 
   onBack, 
   newsItems, 
   setSelectedArticle 
 }: SingleArticleProps) {
+  const navigate = useNavigate();
+
+  const handleRelatedArticleClick = (relatedArticle: NewsItem) => {
+    setSelectedArticle(relatedArticle);
+    const categorySlug = createSlug(relatedArticle.category_name);
+    const titleSlug = createSlug(relatedArticle.title);
+    navigate(`/${categorySlug}/${titleSlug}`);
+    window.scrollTo(0, 0);
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto">
       <Button 
@@ -80,10 +100,7 @@ export default function SingleArticle({
                     <div 
                       key={relatedArticle.id}
                       className="group cursor-pointer"
-                      onClick={() => {
-                        setSelectedArticle(relatedArticle);
-                        window.scrollTo(0, 0);
-                      }}
+                      onClick={() => handleRelatedArticleClick(relatedArticle)}
                     >
                       <div className="flex gap-3">
                         <img

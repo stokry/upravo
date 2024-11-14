@@ -6,6 +6,7 @@ import NewsGrid from './NewsGrid';
 import SingleArticle from './SingleArticle';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export interface NewsItem {
   id: number;
@@ -36,6 +37,29 @@ interface LiveBadgeProps {
   className?: string;
 }
 
+function createSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD") // Decompose characters with accents
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove any remaining non-word characters except whitespace and hyphens
+    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, ''); // Trim any leading or trailing hyphens
+}
+
+// Helper to convert slug back to category name
+function getCategoryFromSlug(slug: string): CategoryType | null {
+  if (!slug) return 'All';
+  
+  const exactMatch = PREDEFINED_CATEGORIES.find(
+    cat => createSlug(cat) === slug
+  );
+  if (exactMatch) return exactMatch;
+
+  return null;
+}
+
 function LiveBadge({ className }: LiveBadgeProps) {
   return (
     <div className={cn(
@@ -58,6 +82,8 @@ function LiveBadge({ className }: LiveBadgeProps) {
 }
 
 export default function NewsPortal() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,18 +141,77 @@ export default function NewsPortal() {
     }
   }, [selectedCategory]);
 
+  // Effect to handle URL routing for both categories and articles
+  useEffect(() => {
+    const path = location.pathname.split('/').filter(Boolean);
+    
+    if (path.length === 0) {
+      if (selectedCategory !== 'All') {
+        setSelectedCategory('All');
+        setNewsItems([]);
+        loadedIds.current.clear();
+        setPage(1);
+      }
+    } else if (path.length === 1) {
+      const category = getCategoryFromSlug(path[0]);
+      if (category && category !== selectedCategory) {
+        setSelectedCategory(category);
+        setSelectedArticle(null);
+        setNewsItems([]);
+        loadedIds.current.clear();
+        setPage(1);
+      } else if (!category) {
+        navigate('/');
+      }
+    } else if (path.length === 2) {
+      const category = getCategoryFromSlug(path[0]);
+      if (category && newsItems.length > 0) {
+        const article = newsItems.find(item => 
+          createSlug(item.category_name) === path[0] && 
+          createSlug(item.title) === path[1]
+        );
+        
+        if (article) {
+          setSelectedArticle(article);
+          setSelectedCategory(category);
+        }
+      }
+    }
+  }, [location.pathname]);
+
   const handleCategoryChange = (category: CategoryType) => {
+    if (category === selectedCategory) return;
+    
     setSelectedArticle(null);
-    setSelectedCategory(category);
     setNewsItems([]);
     loadedIds.current.clear();
     setPage(1);
     setHasMore(true);
+    setSelectedCategory(category);
+
+    if (category === 'All') {
+      navigate('/');
+    } else {
+      navigate(`/${createSlug(category)}`);
+    }
   };
 
+  const handleNewsClick = (article: NewsItem) => {
+    setSelectedArticle(article);
+    const categorySlug = createSlug(article.category_name);
+    const titleSlug = createSlug(article.title);
+    navigate(`/${categorySlug}/${titleSlug}`);
+  };
+
+  const handleBack = () => {
+    setSelectedArticle(null);
+    navigate(selectedCategory === 'All' ? '/' : `/${createSlug(selectedCategory)}`);
+  };
+
+  // Effect for fetching news on category or page changes
   useEffect(() => {
     fetchNews(page);
-  }, [fetchNews, page]);
+  }, [fetchNews, page, selectedCategory]);
 
   const lastNewsElementRef = useCallback((node: HTMLDivElement | null) => {
     if (isLoading) return;
@@ -146,7 +231,10 @@ export default function NewsPortal() {
       <div className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">
         <header className="sticky top-0 bg-background border-b z-10 pb-4 space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div 
+              className="flex items-center space-x-2 cursor-pointer" 
+              onClick={() => handleCategoryChange('All')}
+            >
               <Newspaper className="h-8 w-8 text-primary" />
               <h1 className="text-2xl font-bold tracking-tight">Vijesti Uživo</h1>
             </div>
@@ -180,15 +268,20 @@ export default function NewsPortal() {
           {!selectedArticle ? (
             <NewsGrid 
               news={newsItems} 
-              onNewsClick={setSelectedArticle}
+              onNewsClick={handleNewsClick}
               lastElementRef={lastNewsElementRef}
             />
           ) : (
             <SingleArticle 
               article={selectedArticle} 
-              onBack={() => setSelectedArticle(null)}
+              onBack={handleBack}
               newsItems={newsItems}
-              setSelectedArticle={setSelectedArticle}
+              setSelectedArticle={(article) => {
+                setSelectedArticle(article);
+                const categorySlug = createSlug(article.category_name);
+                const titleSlug = createSlug(article.title);
+                navigate(`/${categorySlug}/${titleSlug}`);
+              }}
             />
           )}
 

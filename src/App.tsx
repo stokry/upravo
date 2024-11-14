@@ -1,13 +1,14 @@
-import NewsPortal from './components/NewsPortal'
+import { BrowserRouter } from 'react-router-dom';
+import NewsPortal from './components/NewsPortal';
 
 function App() {
   return (
-    <div className="font-sans">
-
-<NewsPortal />
-    </div>
-    
-  )
+    <BrowserRouter>
+      <div className="font-sans">
+        <NewsPortal />
+      </div>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
