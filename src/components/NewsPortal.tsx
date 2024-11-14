@@ -7,6 +7,7 @@ import SingleArticle from './SingleArticle';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 
 export interface NewsItem {
   id: number;
@@ -17,6 +18,8 @@ export interface NewsItem {
   category_name: string;
   content: string;
   date_unparsed: string;
+  slug: string;        
+  category_slug: string;  
 }
 
 const PREDEFINED_CATEGORIES = [
@@ -81,6 +84,15 @@ function LiveBadge({ className }: LiveBadgeProps) {
   );
 }
 
+function generateMetaDescription(text: string, maxLength: number = 160): string {
+  if (!text) return '';
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (cleaned.length <= maxLength) return cleaned;
+  return cleaned.substring(0, maxLength).split(' ').slice(0, -1).join(' ') + '...';
+}
+
+
+
 export default function NewsPortal() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,6 +152,37 @@ export default function NewsPortal() {
       setIsLoading(false);
     }
   }, [selectedCategory]);
+
+  const getPageTitle = useCallback(() => {
+    if (selectedArticle) {
+      return `${selectedArticle.title} | Vijesti Uživo`;
+    }
+    if (selectedCategory !== 'All') {
+      return `${selectedCategory} Vijesti | Vijesti Uživo`;
+    }
+    return 'Vijesti Uživo | Najnovije vijesti';
+  }, [selectedArticle, selectedCategory]);
+
+  const getMetaDescription = useCallback(() => {
+    if (selectedArticle) {
+      return generateMetaDescription(selectedArticle.content);
+    }
+    if (selectedCategory !== 'All') {
+      return `Najnovije vijesti iz kategorije ${selectedCategory}. Pratite najnovije vijesti i događanja uživo.`;
+    }
+    return 'Pratite najnovije vijesti i događanja uživo na Vijesti Uživo - vaš izvor za najnovije vijesti iz Hrvatske i svijeta.';
+  }, [selectedArticle, selectedCategory]);
+
+  const getCurrentUrl = useCallback(() => {
+    const baseUrl = window.location.origin;
+    if (selectedArticle) {
+      return `${baseUrl}/${createSlug(selectedArticle.category_name)}/${createSlug(selectedArticle.title)}`;
+    }
+    if (selectedCategory !== 'All') {
+      return `${baseUrl}/${createSlug(selectedCategory)}`;
+    }
+    return baseUrl;
+  }, [selectedArticle, selectedCategory]);
 
   // Effect to handle URL routing for both categories and articles
   useEffect(() => {
@@ -227,6 +270,67 @@ export default function NewsPortal() {
   }, [isLoading, hasMore]);
 
   return (
+    <>
+    <Helmet>
+    <title>{getPageTitle()}</title>
+    <meta name="description" content={getMetaDescription()} />
+    <link rel="canonical" href={getCurrentUrl()} />
+
+    <meta property="og:type" content={selectedArticle ? 'article' : 'website'} />
+    <meta property="og:title" content={getPageTitle()} />
+    <meta property="og:description" content={getMetaDescription()} />
+    <meta property="og:url" content={getCurrentUrl()} />
+    <meta property="og:site_name" content="Vijesti Uživo" />
+
+    {selectedArticle && (
+      <>
+        <meta property="og:image" content={selectedArticle.image_url} />
+        <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
+        <meta property="article:section" content={selectedArticle.category_name} />
+        <meta property="article:author" content="Vijesti Uživo" />
+        
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "NewsArticle",
+            "headline": selectedArticle.title,
+            "description": generateMetaDescription(selectedArticle.content),
+            "image": selectedArticle.image_url,
+            "datePublished": new Date(selectedArticle.date_unparsed).toISOString(),
+            "dateModified": new Date(selectedArticle.date_unparsed).toISOString(),
+            "author": {
+              "@type": "Organization",
+              "name": "Vijesti Uživo"
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Vijesti Uživo",
+              "logo": {
+                "@type": "ImageObject",
+                "url": `${window.location.origin}/logo.png`
+              }
+            },
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": getCurrentUrl()
+            }
+          })}
+        </script>
+      </>
+    )}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={getPageTitle()} />
+    <meta name="twitter:description" content={getMetaDescription()} />
+    {selectedArticle && <meta name="twitter:image" content={selectedArticle.image_url} />}
+
+    <meta name="robots" content="index, follow" />
+    <meta name="language" content="Croatian" />
+    {selectedCategory !== 'All' && (
+      <meta name="keywords" content={`vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`} />
+    )}
+  </Helmet>
+
     <div className="min-h-screen bg-background font-mono">
       <div className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">
         <header className="sticky top-0 bg-background border-b z-10 pb-4 space-y-4">
@@ -291,5 +395,6 @@ export default function NewsPortal() {
         </main>
       </div>
     </div>
+    </>
   );
 }
