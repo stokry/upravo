@@ -51,7 +51,7 @@ export default function SingleArticle({
         className="mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to News
+        Natrag
       </Button>
       
       <article className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -86,12 +86,12 @@ export default function SingleArticle({
           <div className="sticky top-24 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Top Articles</CardTitle>
+                <CardTitle>Vidi još</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {article.category_name && (
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline">Latest from {article.category_name}</Badge>
+                    <Badge variant="outline">Zadnje iz {article.category_name}</Badge>
                   </div>
                 )}
                 {newsItems
@@ -124,17 +124,7 @@ export default function SingleArticle({
                       </div>
                     </div>
                   ))}
-                <Button className="w-full mt-4" asChild>
-                  <a 
-                    href={article.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2"
-                  >
-                    Read Full Article
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
+               
               </CardContent>
             </Card>
           </div>
