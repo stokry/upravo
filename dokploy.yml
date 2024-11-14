@@ -1,5 +1,5 @@
 {
-  "name": "upravo-portal",
+  "name": "brzi-info",
   "port": 4173,
   "env": {
     "NODE_ENV": "production"
