@@ -16,21 +16,36 @@ interface SingleArticleProps {
 // Helper function for creating URL-friendly slugs
 function createSlug(text: string): string {
   return text
-  .toLowerCase()
-  .normalize("NFD") // Decompose characters with accents
-  .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-  .trim()
-  .replace(/[^\w\s-]/g, '') // Remove any remaining non-word characters except whitespace and hyphens
-  .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
-  .replace(/^-+|-+$/g, ''); // Trim any leading or trailing hyphens
-
+    .toLowerCase()
+    .normalize("NFD") // Decompose characters with accents
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove any remaining non-word characters except whitespace and hyphens
+    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
+    .replace(/^-+|-+$/g, ''); // Trim any leading or trailing hyphens
 }
 
-export default function SingleArticle({ 
-  article, 
-  onBack, 
-  newsItems, 
-  setSelectedArticle 
+// Utility to split content into paragraphs and headings
+function renderContent(content: string) {
+  // Split content by sections for headings (like `##` markers) and paragraphs by newlines.
+  const sections = content.split('\n').map((section, idx) => {
+    if (section.startsWith('##')) {
+      // Headings, using "##" as a custom delimiter for headings
+      return <h3 key={idx} className="text-2xl font-semibold mb-2">{section.replace(/^##/, '').trim()}</h3>;
+    } else {
+      // Regular paragraph
+      return <p key={idx} className="text-lg leading-relaxed">{section}</p>;
+    }
+  });
+
+  return sections;
+}
+
+export default function SingleArticle({
+  article,
+  onBack,
+  newsItems,
+  setSelectedArticle
 }: SingleArticleProps) {
   const navigate = useNavigate();
 
@@ -39,21 +54,16 @@ export default function SingleArticle({
     const categorySlug = createSlug(relatedArticle.category_name);
     const titleSlug = createSlug(relatedArticle.title);
     navigate(`/${categorySlug}/${titleSlug}`);
-    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <div className="max-w-[1200px] mx-auto">
-      <Button 
-        variant="ghost" 
-        onClick={onBack}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={onBack} className="mb-4">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Natrag
       </Button>
-      
+
       <article className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-8 space-y-6">
@@ -76,8 +86,9 @@ export default function SingleArticle({
             />
           </div>
 
-          <div className="prose prose-lg max-w-none">
-            <p className="text-lg leading-relaxed">{article.content}</p>
+          {/* Rendered article content */}
+          <div className="prose prose-lg max-w-none space-y-6">
+            {renderContent(article.content)}
           </div>
         </div>
 
@@ -95,13 +106,10 @@ export default function SingleArticle({
                   </div>
                 )}
                 {newsItems
-                  .filter(item => 
-                    item.id !== article.id && 
-                    item.category_name === article.category_name
-                  )
+                  .filter(item => item.id !== article.id && item.category_name === article.category_name)
                   .slice(0, 6)
                   .map(relatedArticle => (
-                    <div 
+                    <div
                       key={relatedArticle.id}
                       className="group cursor-pointer"
                       onClick={() => handleRelatedArticleClick(relatedArticle)}
@@ -124,7 +132,6 @@ export default function SingleArticle({
                       </div>
                     </div>
                   ))}
-               
               </CardContent>
             </Card>
           </div>
