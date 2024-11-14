@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { NewsItem } from '@/types/news';
 import { getTimeAgo } from '@/utils/date';
-import { cn } from '@/lib/utils';
 
 interface NewsGridProps {
   news: NewsItem[];
@@ -67,7 +66,7 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
 
         {/* 3 Latest Articles */}
         <div className="col-span-1 lg:col-span-1 space-y-4">
-          {otherArticles.slice(0, 4).map((article, index) => (
+          {otherArticles.slice(0, 4).map((article) => (
             <Card
               key={article.id}
               className="cursor-pointer transform transition-all duration-500 hover:shadow-lg group"
