@@ -66,17 +66,17 @@ function getCategoryFromSlug(slug: string): CategoryType | null {
 function LiveBadge({ className }: LiveBadgeProps) {
   return (
     <div className={cn(
-      "relative flex items-center space-x-2 bg-gradient-to-r from-green-100 to-emerald-100",
+      "relative flex items-center space-x-2 bg-gradient-to-r from-brand/10 to-brand/5",
       "px-4 py-1.5 rounded-full group hover:shadow-lg transition-all duration-300",
       className
     )}>
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-green-500 to-emerald-500 opacity-10 rounded-full blur-sm group-hover:opacity-15 transition-opacity" />
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-brand to-brand-light opacity-10 rounded-full blur-sm group-hover:opacity-15 transition-opacity" />
       <div className="relative flex items-center">
         <div className="relative">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-ping absolute" />
-          <div className="w-2 h-2 bg-green-500 rounded-full relative" />
+        <div className="w-2 h-2 bg-brand rounded-full animate-ping absolute" />
+        <div className="w-2 h-2 bg-brand rounded-full relative" />
         </div>
-        <span className="relative ml-2 text-sm font-medium text-green-800">
+        <span className="relative ml-2 text-sm font-medium text-brand">
           Uživo
         </span>
       </div>
@@ -334,7 +334,7 @@ export default function NewsPortal() {
 
     <div className="min-h-screen bg-background font-sans">
       <div className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">
-        <header className="sticky top-0 bg-background border-b z-10 pb-4 space-y-4">
+        <header className="sticky top-0 bg-background border-b border-brand/10 z-10 pb-4 space-y-4">
         <div className="flex items-center justify-between">
     <div 
       className="flex items-center space-x-2 cursor-pointer" 
@@ -350,18 +350,23 @@ export default function NewsPortal() {
           </div>
 
           <nav className="flex gap-2 overflow-x-auto pb-2">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleCategoryChange(category)}
-                className="flex-shrink-0"
-              >
-                {category}
-              </Button>
-            ))}
-          </nav>
+    {categories.map((category) => (
+      <Button
+        key={category}
+        variant={selectedCategory === category ? "default" : "outline"}
+        size="sm"
+        onClick={() => handleCategoryChange(category)}
+        className={cn(
+          "flex-shrink-0 transition-colors",
+          selectedCategory === category 
+            ? "bg-brand hover:bg-brand-light text-white"
+            : "hover:text-brand border-brand/20 hover:border-brand"
+        )}
+      >
+        {category}
+      </Button>
+    ))}
+  </nav>
         </header>
 
         <main className="mt-6">
