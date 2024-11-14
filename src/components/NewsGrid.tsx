@@ -8,10 +8,10 @@ import { getTimeAgo } from '@/utils/date';
 interface NewsGridProps {
   news: NewsItem[];
   onNewsClick: (item: NewsItem) => void;
-  lastElementRef: (node: any) => void;
+  hasMore: boolean;
 }
 
-export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGridProps) {
+export default function NewsGrid({ news, onNewsClick, hasMore }: NewsGridProps) {
   const mainArticle = news[0];
   const otherArticles = news.slice(1);
 
@@ -102,12 +102,11 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
 
       {/* Other Articles in Two Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {otherArticles.slice(3).map((article, index) => (
+        {otherArticles.slice(3).map((article) => (
           <Card
             key={article.id}
             className="cursor-pointer transform transition-all duration-500 hover:shadow-lg group"
             onClick={() => onNewsClick(article)}
-            ref={index === otherArticles.length - 1 ? lastElementRef : null}
           >
             <CardHeader className="pb-2">
               <div className="space-y-1">
@@ -145,6 +144,11 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
           </Card>
         ))}
       </div>
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button variant="outline">Učitaj više</Button>
+        </div>
+      )}
     </div>
   );
 }
