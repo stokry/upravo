@@ -2,6 +2,7 @@ import { ArticleHeader, ArticleHeaderSkeleton } from './ArticleHeader';
 import { ArticleContent, ArticleContentSkeleton } from './ArticleContent';
 import { RelatedNews, RelatedNewsSkeleton } from '../RelatedNews';
 import type { NewsItem } from '@/types/news';
+import { useEffect, useLayoutEffect } from 'react';
 
 interface SingleArticleProps {
   article: NewsItem;
@@ -11,6 +12,23 @@ interface SingleArticleProps {
   isLoading?: boolean;
 }
 
+const forceScrollTop = () => {
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      
+      // Double check after a short delay
+      setTimeout(() => {
+        if (window.scrollY > 0) {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }
+      }, 50);
+    });
+  };
+
 export function SingleArticle({ 
   article, 
   newsItems, 
@@ -18,9 +36,32 @@ export function SingleArticle({
   onNewsClick,
   isLoading = false
 }: SingleArticleProps) {
+
+    useLayoutEffect(() => {
+        forceScrollTop();
+      }, [article.id]); // Run when article changes
+
+      useEffect(() => {
+        forceScrollTop();
+      }, [article.id]);
+    
   if (isLoading) {
     return <SingleArticleSkeleton />;
   }
+
+  const handleRelatedNewsClick = (selectedArticle: NewsItem) => {
+    // Force scroll before handling the click
+    forceScrollTop();
+    
+    // Handle the click with a slight delay
+    setTimeout(() => {
+      onNewsClick(selectedArticle);
+      // Double-check scroll position after state updates
+      requestAnimationFrame(() => {
+        forceScrollTop();
+      });
+    }, 50);
+  };
 
   return (
     <div className="max-w-[1200px] mx-auto">
@@ -40,7 +81,7 @@ export function SingleArticle({
             <RelatedNews
               currentArticle={article}
               newsItems={newsItems}
-              onArticleClick={onNewsClick}
+              onArticleClick={handleRelatedNewsClick}
             />
           </div>
         </aside>

@@ -188,11 +188,20 @@ export default function NewsPortal() {
   };
 
   const handleNewsClick = (article: NewsItem) => {
+    window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
     const categorySlug = createSlug(article.category_name);
     const titleSlug = createSlug(article.title);
     navigate(`/${categorySlug}/${titleSlug}`);
     setSelectedArticle(article);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+  
   };
 
   const handleBack = () => {
