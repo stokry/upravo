@@ -1,8 +1,11 @@
+// components/News/SingleArticle/index.tsx
+import { useEffect, useLayoutEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArticleHeader, ArticleHeaderSkeleton } from './ArticleHeader';
 import { ArticleContent, ArticleContentSkeleton } from './ArticleContent';
 import { RelatedNews, RelatedNewsSkeleton } from '../RelatedNews';
 import type { NewsItem } from '@/types/news';
-import { useEffect, useLayoutEffect } from 'react';
+import { createSlug } from '@/utils/seo';
 
 interface SingleArticleProps {
   article: NewsItem;
@@ -13,6 +16,7 @@ interface SingleArticleProps {
 }
 
 const forceScrollTop = () => {
+  return new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
@@ -25,38 +29,59 @@ const forceScrollTop = () => {
           document.documentElement.scrollTop = 0;
           document.body.scrollTop = 0;
         }
+        resolve();
       }, 50);
     });
-  };
+  });
+};
 
-export function SingleArticle({ 
-  article, 
-  newsItems, 
-  onBack, 
+export function SingleArticle({
+  article,
+  newsItems,
+  onBack,
   onNewsClick,
   isLoading = false
 }: SingleArticleProps) {
+  const navigate = useNavigate();
 
-    useLayoutEffect(() => {
-        forceScrollTop();
-      }, [article.id]); // Run when article changes
-
-      useEffect(() => {
-        forceScrollTop();
-      }, [article.id]);
+  // Ensure URL is correct when component mounts or article changes
+  useLayoutEffect(() => {
+    const categorySlug = createSlug(article.category_name);
+    const titleSlug = createSlug(article.title);
+    const currentPath = `/${categorySlug}/${titleSlug}`;
     
+    // Update URL if it doesn't match current article
+    if (window.location.pathname !== currentPath) {
+      navigate(currentPath, { replace: false });
+    }
+  }, [article, navigate]);
+
+  // Handle scrolling
+  useEffect(() => {
+    forceScrollTop();
+  }, [article.id]);
+
   if (isLoading) {
     return <SingleArticleSkeleton />;
   }
 
-  const handleRelatedNewsClick = (selectedArticle: NewsItem) => {
-    // Force scroll before handling the click
-    forceScrollTop();
+  const handleRelatedNewsClick = async (selectedArticle: NewsItem) => {
+    // First scroll to top
+    await forceScrollTop();
+
+    // Update URL and state
+    const categorySlug = createSlug(selectedArticle.category_name);
+    const titleSlug = createSlug(selectedArticle.title);
+    const newPath = `/${categorySlug}/${titleSlug}`;
     
-    // Handle the click with a slight delay
+    // Navigate first
+    navigate(newPath, { replace: false });
+    
+    // Then update state after a small delay
     setTimeout(() => {
       onNewsClick(selectedArticle);
-      // Double-check scroll position after state updates
+      
+      // Final scroll check
       requestAnimationFrame(() => {
         forceScrollTop();
       });
@@ -69,7 +94,7 @@ export function SingleArticle({
         {/* Main Content */}
         <div className="lg:col-span-8 space-y-6">
           <ArticleHeader 
-            article={article} 
+            article={article}
             onBack={onBack}
           />
           <ArticleContent article={article} />

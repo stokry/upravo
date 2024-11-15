@@ -18,6 +18,14 @@ import { getCategoryFromSlug } from '@/utils/category';
 
 const categories: CategoryType[] = ['Sve', ...PREDEFINED_CATEGORIES];
 
+const forceScrollTop = () => {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  });
+};
+
 export default function NewsPortal() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -109,6 +117,7 @@ export default function NewsPortal() {
     return baseUrl;
   }, [selectedArticle, selectedCategory]);
 
+  // URL handling effect
   useEffect(() => {
     const path = location.pathname.split('/').filter(Boolean);
     
@@ -117,19 +126,20 @@ export default function NewsPortal() {
         const categoryName = path[0];
         const articleSlug = path[1];
         
-        if (newsItems.length > 0) {
-          const article = newsItems.find(item => 
-            createSlug(item.category_name) === categoryName && 
-            createSlug(item.title) === articleSlug
-          );
-          
-          if (article) {
-            setSelectedArticle(article);
-            setSelectedCategory(article.category_name as CategoryType);
-            return;
-          }
+        // First try to find in existing items
+        const existingArticle = newsItems.find(item => 
+          createSlug(item.category_name) === categoryName && 
+          createSlug(item.title) === articleSlug
+        );
+        
+        if (existingArticle) {
+          setSelectedArticle(existingArticle);
+          setSelectedCategory(existingArticle.category_name as CategoryType);
+          forceScrollTop();
+          return;
         }
         
+        // If not found, fetch from API
         try {
           const baseUrl = 'https://kibfdaxeegvddusnknfs.supabase.co/rest/v1/articles';
           const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpYmZkYXhlZWd2ZGR1c25rbmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQzMTQ2NzMsImV4cCI6MjAzOTg5MDY3M30.l9HjERTXw_8mAqzIOkv8vck82CBbh2wPiZ_pS96k7Mg';
@@ -148,12 +158,13 @@ export default function NewsPortal() {
             setSelectedArticle(article);
             setSelectedCategory(article.category_name as CategoryType);
             setNewsItems(data);
+            forceScrollTop();
           } else {
             throw new Error('Article not found');
           }
         } catch (err) {
           console.error('Error loading article:', err);
-          navigate('/');
+          navigate('/', { replace: true });
         }
       } else if (path.length === 1) {
         const category = getCategoryFromSlug(path[0]);
@@ -163,6 +174,7 @@ export default function NewsPortal() {
           setNewsItems([]);
           loadedIds.current.clear();
           setPage(1);
+          forceScrollTop();
         }
       }
     };
@@ -181,36 +193,32 @@ export default function NewsPortal() {
     setSelectedCategory(category);
 
     if (category === 'Sve') {
-      navigate('/');
+      navigate('/', { replace: false });
     } else {
-      navigate(`/${createSlug(category)}`);
+      navigate(`/${createSlug(category)}`, { replace: false });
     }
+    
+    forceScrollTop();
   };
 
   const handleNewsClick = (article: NewsItem) => {
-    window.scrollTo(0, 0);
-  document.documentElement.scrollTop = 0;
-  document.body.scrollTop = 0;
     const categorySlug = createSlug(article.category_name);
     const titleSlug = createSlug(article.title);
-    navigate(`/${categorySlug}/${titleSlug}`);
+    const newPath = `/${categorySlug}/${titleSlug}`;
+    
     setSelectedArticle(article);
-
-    requestAnimationFrame(() => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    });
-  
+    navigate(newPath, { replace: false });
+    forceScrollTop();
   };
 
   const handleBack = () => {
     setSelectedArticle(null);
     if (selectedCategory === 'Sve') {
-      navigate('/');
+      navigate('/', { replace: false });
     } else {
-      navigate(`/${createSlug(selectedCategory)}`);
+      navigate(`/${createSlug(selectedCategory)}`, { replace: false });
     }
+    forceScrollTop();
   };
 
   useEffect(() => {
@@ -245,7 +253,12 @@ export default function NewsPortal() {
         } />
         {selectedArticle && (
           <>
+            <meta property="og:type" content="article" />
+            <meta property="og:title" content={selectedArticle.title} />
+            <meta property="og:description" content={generateMetaDescription(selectedArticle.content)} />
             <meta property="og:image" content={selectedArticle.image_url} />
+            <meta property="og:url" content={getCurrentUrl()} />
+            <meta name="twitter:card" content="summary_large_image" />
             <meta name="twitter:image" content={selectedArticle.image_url} />
             <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
             <meta property="article:section" content={selectedArticle.category_name} />
