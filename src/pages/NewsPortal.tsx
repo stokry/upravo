@@ -42,8 +42,8 @@ export default function NewsPortal() {
     setIsLoading(true);
     setError(null);
     try {
-      const baseUrl = 'https://kibfdaxeegvddusnknfs.supabase.co/rest/v1/articles';
-      const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpYmZkYXhlZWd2ZGR1c25rbmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQzMTQ2NzMsImV4cCI6MjAzOTg5MDY3M30.l9HjERTXw_8mAqzIOkv8vck82CBbh2wPiZ_pS96k7Mg';
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL; 
+      const apiKey = import.meta.env.VITE_SUPABASE_API_KEY;
       
       const params = new URLSearchParams({
         apikey: apiKey,
