@@ -1,36 +1,32 @@
-import { Clock, ArrowRight } from 'lucide-react';
+// components/News/NewsGrid/index.tsx
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { NewsItem } from '@/types/news';
+import { Clock, ArrowRight } from 'lucide-react';
+import type { NewsItem } from '@/types/news';
 import { getTimeAgo } from '@/utils/date';
 
 interface NewsGridProps {
   news: NewsItem[];
   onNewsClick: (item: NewsItem) => void;
-  lastElementRef: (node: any) => void;
+  lastElementRef: (node: HTMLDivElement | null) => void;
 }
 
-export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGridProps) {
+export function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGridProps) {
+  if (!news.length) return null;
+
   const mainArticle = news[0];
-  const otherArticles = news.slice(1);
-
-  if (!mainArticle) return null;
-  const handleArticleClick = (article: NewsItem) => {
-    // Scroll to top before handling the click
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    onNewsClick(article);
-  };
-
+  const topArticles = news.slice(1, 5);
+  const otherArticles = news.slice(5);
 
   return (
     <div className="space-y-6">
       <main className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Article */}
+        {/* Main Featured Article */}
         <div className="col-span-1 lg:col-span-2">
           <Card
             className="cursor-pointer transform transition-all duration-500 hover:shadow-lg border-l-4 border-l-primary group"
-            onClick={() => handleArticleClick(mainArticle)}
+            onClick={() => onNewsClick(mainArticle)}
           >
             <CardHeader className="pb-2">
               <div className="flex flex-col justify-between items-start gap-2">
@@ -70,13 +66,13 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
           </Card>
         </div>
 
-        {/* 3 Latest Articles */}
+        {/* Top Articles Sidebar */}
         <div className="col-span-1 lg:col-span-1 space-y-4">
-          {otherArticles.slice(0, 4).map((article) => (
+          {topArticles.map((article) => (
             <Card
               key={article.id}
               className="cursor-pointer transform transition-all duration-500 hover:shadow-lg group"
-              onClick={() => handleArticleClick(mainArticle)}
+              onClick={() => onNewsClick(article)}
             >
               <CardHeader className="pb-2">
                 <div className="flex items-start gap-4">
@@ -107,14 +103,13 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
       </main>
 
       {/* Other Articles in Two Columns */}
-      {/* Other Articles in Two Columns */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {otherArticles.map((article, index) => (
           <Card
             key={article.id}
+            ref={index === otherArticles.length - 1 ? lastElementRef : undefined}
             className="cursor-pointer transform transition-all duration-500 hover:shadow-lg group"
-            onClick={() => handleArticleClick(mainArticle)}
-            ref={index === otherArticles.length - 1 ? lastElementRef : null}
+            onClick={() => onNewsClick(article)}
           >
             <CardHeader className="pb-2">
               <div className="space-y-1">
@@ -152,7 +147,82 @@ export default function NewsGrid({ news, onNewsClick, lastElementRef }: NewsGrid
           </Card>
         ))}
       </div>
-      
+    </div>
+  );
+}
+
+export function NewsGridSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <main className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Article Skeleton */}
+        <div className="col-span-1 lg:col-span-2">
+          <Card className="border-l-4 border-l-primary">
+            <CardHeader className="pb-2">
+              <div className="space-y-3">
+                <div className="h-8 bg-muted rounded w-3/4" />
+                <div className="flex gap-2">
+                  <div className="h-5 bg-muted rounded w-24" />
+                  <div className="h-5 bg-muted rounded w-32" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-72 bg-muted rounded mb-4" />
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded w-full" />
+                <div className="h-4 bg-muted rounded w-5/6" />
+                <div className="h-4 bg-muted rounded w-4/6" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Articles Skeleton */}
+        <div className="col-span-1 lg:col-span-1 space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <div className="flex gap-4">
+                  <div className="w-24 h-24 bg-muted rounded" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 bg-muted rounded w-3/4" />
+                    <div className="flex gap-2">
+                      <div className="h-4 bg-muted rounded w-20" />
+                      <div className="h-4 bg-muted rounded w-24" />
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </main>
+
+      {/* Other Articles Grid Skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <div className="space-y-2">
+                <div className="h-6 bg-muted rounded w-3/4" />
+                <div className="flex gap-2">
+                  <div className="h-4 bg-muted rounded w-20" />
+                  <div className="h-4 bg-muted rounded w-24" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48 bg-muted rounded mb-4" />
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded w-full" />
+                <div className="h-4 bg-muted rounded w-5/6" />
+                <div className="h-4 bg-muted rounded w-4/6" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

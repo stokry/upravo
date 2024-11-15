@@ -1,6 +1,6 @@
 import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
-import NewsPortal from './components/NewsPortal';
+import NewsPortal from './pages/NewsPortal';
 
 function App() {
   return (
