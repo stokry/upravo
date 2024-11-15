@@ -1,3 +1,4 @@
+// components/News/RelatedNews/index.tsx
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
@@ -22,6 +23,15 @@ export function RelatedNews({
     )
     .slice(0, 6);
 
+  const handleArticleClick = (article: NewsItem) => {
+    // First scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Then trigger the article click after a small delay to ensure smooth transition
+    setTimeout(() => {
+      onArticleClick(article);
+    }, 100);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -40,7 +50,7 @@ export function RelatedNews({
           <div
             key={article.id}
             className="group cursor-pointer hover:bg-muted/50 rounded-lg p-2 transition-colors"
-            onClick={() => onArticleClick(article)}
+            onClick={() => handleArticleClick(article)}
           >
             <div className="flex gap-3">
               <img
@@ -65,7 +75,6 @@ export function RelatedNews({
   );
 }
 
-// Optional: Add a loading skeleton component
 export function RelatedNewsSkeleton() {
   return (
     <Card className="animate-pulse">
