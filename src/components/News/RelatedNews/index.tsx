@@ -1,4 +1,5 @@
 // components/News/RelatedNews/index.tsx
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
@@ -23,14 +24,65 @@ export function RelatedNews({
     )
     .slice(0, 6);
 
+  const scrollToTop = () => {
+    // Try multiple scroll methods for better compatibility
+    try {
+      // Method 1: Smooth scroll with window.scrollTo
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+
+      // Method 2: Scroll the documentElement
+      document.documentElement.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+
+      // Method 3: Scroll the body
+      document.body.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+
+      // Method 4: Fallback to immediate scroll if smooth scroll fails
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    } catch (error) {
+      // Final fallback
+      window.scrollTo(0, 0);
+    }
+  };
+
   const handleArticleClick = (article: NewsItem) => {
-    // First scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    // Then trigger the article click after a small delay to ensure smooth transition
+    // First scroll attempt
+    scrollToTop();
+
+    // Then trigger the article click with a delay
     setTimeout(() => {
       onArticleClick(article);
-    }, 100);
+      
+      // Second scroll attempt after content change
+      requestAnimationFrame(() => {
+        scrollToTop();
+        
+        // Final scroll check after a short delay
+        setTimeout(() => {
+          if (window.scrollY > 0) {
+            scrollToTop();
+          }
+        }, 100);
+      });
+    }, 50);
   };
+
+  // Add scroll to top when component mounts or updates
+  useEffect(() => {
+    scrollToTop();
+  }, [currentArticle.id]);
 
   return (
     <Card>
@@ -51,6 +103,13 @@ export function RelatedNews({
             key={article.id}
             className="group cursor-pointer hover:bg-muted/50 rounded-lg p-2 transition-colors"
             onClick={() => handleArticleClick(article)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleArticleClick(article);
+              }
+            }}
           >
             <div className="flex gap-3">
               <img
