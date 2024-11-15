@@ -1,4 +1,3 @@
-// pages/NewsPortal.tsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -13,7 +12,7 @@ import type { NewsItem, CategoryType } from '@/types/news';
 import { PREDEFINED_CATEGORIES } from '@/types/news';
 
 // Utils
-import { createSlug, generateMetaDescription } from '@/utils/seo';
+import { createSlug } from '@/utils/seo';
 import { getCategoryFromSlug } from '@/utils/category';
 
 const categories: CategoryType[] = ['Sve', ...PREDEFINED_CATEGORIES];
@@ -98,7 +97,7 @@ export default function NewsPortal() {
 
   const getMetaDescription = useCallback(() => {
     if (selectedArticle) {
-      return generateMetaDescription(selectedArticle.content);
+      return selectedArticle.meta_description || selectedArticle.summary;
     }
     if (selectedCategory !== 'Sve') {
       return `Najnovije vijesti iz kategorije ${selectedCategory}. Pratite najnovije vijesti i događanja uživo.`;
@@ -117,70 +116,35 @@ export default function NewsPortal() {
     return baseUrl;
   }, [selectedArticle, selectedCategory]);
 
-  // URL handling effect
-  useEffect(() => {
-    const path = location.pathname.split('/').filter(Boolean);
-    
-    const loadArticleFromUrl = async () => {
-      if (path.length === 2) {
-        const categoryName = path[0];
-        const articleSlug = path[1];
-        
-        // First try to find in existing items
-        const existingArticle = newsItems.find(item => 
-          createSlug(item.category_name) === categoryName && 
-          createSlug(item.title) === articleSlug
-        );
-        
-        if (existingArticle) {
-          setSelectedArticle(existingArticle);
-          setSelectedCategory(existingArticle.category_name as CategoryType);
-          forceScrollTop();
-          return;
-        }
-        
-        // If not found, fetch from API
-        try {
-          const baseUrl = 'https://kibfdaxeegvddusnknfs.supabase.co/rest/v1/articles';
-          const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpYmZkYXhlZWd2ZGR1c25rbmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQzMTQ2NzMsImV4cCI6MjAzOTg5MDY3M30.l9HjERTXw_8mAqzIOkv8vck82CBbh2wPiZ_pS96k7Mg';
-          
-          const params = new URLSearchParams({ apikey: apiKey });
-          const response = await fetch(`${baseUrl}?${params}`);
-          if (!response.ok) throw new Error('Failed to fetch news');
-          const data = await response.json() as NewsItem[];
-          
-          const article = data.find(item => 
-            createSlug(item.category_name) === categoryName && 
-            createSlug(item.title) === articleSlug
-          );
-          
-          if (article) {
-            setSelectedArticle(article);
-            setSelectedCategory(article.category_name as CategoryType);
-            setNewsItems(data);
-            forceScrollTop();
-          } else {
-            throw new Error('Article not found');
-          }
-        } catch (err) {
-          console.error('Error loading article:', err);
-          navigate('/', { replace: true });
-        }
-      } else if (path.length === 1) {
-        const category = getCategoryFromSlug(path[0]);
-        if (category && category !== selectedCategory) {
-          setSelectedCategory(category);
-          setSelectedArticle(null);
-          setNewsItems([]);
-          loadedIds.current.clear();
-          setPage(1);
-          forceScrollTop();
-        }
-      }
-    };
-  
-    loadArticleFromUrl();
-  }, [location.pathname, newsItems, navigate, selectedCategory]);
+  const getMetaTags = useCallback(() => {
+    if (selectedArticle) {
+      return (
+        <>
+          <meta property="og:type" content="article" />
+          <meta property="og:title" content={selectedArticle.title} />
+          <meta property="og:description" content={selectedArticle.meta_description || selectedArticle.summary} />
+          <meta property="og:image" content={selectedArticle.image_url} />
+          <meta property="og:url" content={getCurrentUrl()} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:image" content={selectedArticle.image_url} />
+          <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
+          <meta property="article:section" content={selectedArticle.category_name} />
+          <meta name="keywords" content={selectedArticle.keywords?.join(', ') || `vijesti, ${selectedArticle.category_name.toLowerCase()}, hrvatska, novosti`} />
+          {selectedArticle.suggested_links?.map((link, index) => (
+            <link key={index} rel="related" href={link} />
+          ))}
+        </>
+      );
+    }
+
+    return (
+      <meta name="keywords" content={
+        selectedCategory !== 'Sve'
+          ? `vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`
+          : 'vijesti, hrvatska, najnovije vijesti, uživo, novosti, svijet, regija'
+      } />
+    );
+  }, [selectedArticle, selectedCategory, getCurrentUrl]);
 
   const handleCategoryChange = (category: CategoryType) => {
     if (category === selectedCategory) return;
@@ -221,6 +185,71 @@ export default function NewsPortal() {
     forceScrollTop();
   };
 
+  // URL handling effect
+  useEffect(() => {
+    const path = location.pathname.split('/').filter(Boolean);
+    
+    const loadArticleFromUrl = async () => {
+      if (path.length === 2) {
+        const categoryName = path[0];
+        const articleSlug = path[1];
+        
+        // First try to find in existing items
+        const existingArticle = newsItems.find(item => 
+          createSlug(item.category_name) === categoryName && 
+          createSlug(item.title) === articleSlug
+        );
+        
+        if (existingArticle) {
+          setSelectedArticle(existingArticle);
+          setSelectedCategory(existingArticle.category_name as CategoryType);
+          forceScrollTop();
+          return;
+        }
+        
+        // If not found, fetch from API
+        try {
+          const baseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const apiKey = import.meta.env.VITE_SUPABASE_API_KEY;
+          
+          const params = new URLSearchParams({ apikey: apiKey });
+          const response = await fetch(`${baseUrl}?${params}`);
+          if (!response.ok) throw new Error('Failed to fetch news');
+          const data = await response.json() as NewsItem[];
+          
+          const article = data.find(item => 
+            createSlug(item.category_name) === categoryName && 
+            createSlug(item.title) === articleSlug
+          );
+          
+          if (article) {
+            setSelectedArticle(article);
+            setSelectedCategory(article.category_name as CategoryType);
+            setNewsItems(data);
+            forceScrollTop();
+          } else {
+            throw new Error('Article not found');
+          }
+        } catch (err) {
+          console.error('Error loading article:', err);
+          navigate('/', { replace: true });
+        }
+      } else if (path.length === 1) {
+        const category = getCategoryFromSlug(path[0]);
+        if (category && category !== selectedCategory) {
+          setSelectedCategory(category);
+          setSelectedArticle(null);
+          setNewsItems([]);
+          loadedIds.current.clear();
+          setPage(1);
+          forceScrollTop();
+        }
+      }
+    };
+  
+    loadArticleFromUrl();
+  }, [location.pathname, newsItems, navigate, selectedCategory]);
+
   useEffect(() => {
     fetchNews(page);
   }, [fetchNews, page, selectedCategory]);
@@ -244,25 +273,30 @@ export default function NewsPortal() {
         <title>{getPageTitle()}</title>
         <meta name="description" content={getMetaDescription()} />
         <link rel="canonical" href={getCurrentUrl()} />
-        <meta name="keywords" content={
-          selectedArticle 
-            ? `vijesti, ${selectedArticle.category_name.toLowerCase()}, hrvatska, novosti, ${selectedArticle.title.toLowerCase()}`
-            : selectedCategory !== 'Sve'
-            ? `vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`
-            : 'vijesti, hrvatska, najnovije vijesti, uživo, novosti, svijet, regija'
-        } />
+        {getMetaTags()}
+        {/* Structured Data for Article */}
         {selectedArticle && (
-          <>
-            <meta property="og:type" content="article" />
-            <meta property="og:title" content={selectedArticle.title} />
-            <meta property="og:description" content={generateMetaDescription(selectedArticle.content)} />
-            <meta property="og:image" content={selectedArticle.image_url} />
-            <meta property="og:url" content={getCurrentUrl()} />
-            <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:image" content={selectedArticle.image_url} />
-            <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
-            <meta property="article:section" content={selectedArticle.category_name} />
-          </>
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              "headline": selectedArticle.title,
+              "image": [selectedArticle.image_url],
+              "datePublished": new Date(selectedArticle.date_unparsed).toISOString(),
+              "articleSection": selectedArticle.category_name,
+              "keywords": selectedArticle.keywords,
+              "description": selectedArticle.meta_description || selectedArticle.summary,
+              "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": getCurrentUrl()
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "Brzi.info",
+                "url": window.location.origin
+              }
+            })}
+          </script>
         )}
       </Helmet>
 

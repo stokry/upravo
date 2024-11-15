@@ -1,8 +1,9 @@
-import { ArrowLeft, Clock } from 'lucide-react';
+// components/News/SingleArticle/ArticleHeader.tsx
+import { Clock, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getTimeAgo } from '@/utils/date';
 import type { NewsItem } from '@/types/news';
+import { getTimeAgo } from '@/utils/date';
 
 interface ArticleHeaderProps {
   article: NewsItem;
@@ -24,7 +25,7 @@ export function ArticleHeader({ article, onBack }: ArticleHeaderProps) {
         <h1 className="text-2xl font-bold leading-tight sm:hidden">
           {article.title}
         </h1>
-        
+
         <div className="flex items-center gap-4">
           <Badge variant="secondary">{article.category_name}</Badge>
           <span className="text-sm text-muted-foreground flex items-center">
@@ -41,22 +42,6 @@ export function ArticleHeader({ article, onBack }: ArticleHeaderProps) {
           className="w-full h-full object-cover rounded-lg"
         />
       </div>
-    </div>
-  );
-}
-
-export function ArticleHeaderSkeleton() {
-  return (
-    <div className="space-y-4 animate-pulse">
-      <div className="h-10 w-24 bg-muted rounded" /> {/* Back button */}
-      <div className="space-y-4">
-        <div className="h-12 bg-muted rounded-lg w-3/4" /> {/* Title */}
-        <div className="flex gap-4">
-          <div className="h-6 w-24 bg-muted rounded" /> {/* Category */}
-          <div className="h-6 w-32 bg-muted rounded" /> {/* Date */}
-        </div>
-      </div>
-      <div className="aspect-video bg-muted rounded-lg" /> {/* Image */}
     </div>
   );
 }

@@ -1,11 +1,12 @@
 // components/News/SingleArticle/index.tsx
 import { useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArticleHeader, ArticleHeaderSkeleton } from './ArticleHeader';
-import { ArticleContent, ArticleContentSkeleton } from './ArticleContent';
-import { RelatedNews, RelatedNewsSkeleton } from '../RelatedNews';
 import type { NewsItem } from '@/types/news';
 import { createSlug } from '@/utils/seo';
+import { ArticleHeader } from './ArticleHeader';
+import { ArticleContent } from './ArticleContent';
+import { RelatedNews, RelatedNewsSkeleton } from '../RelatedNews';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface SingleArticleProps {
   article: NewsItem;
@@ -21,8 +22,7 @@ const forceScrollTop = () => {
       window.scrollTo(0, 0);
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
-      
-      // Double check after a short delay
+
       setTimeout(() => {
         if (window.scrollY > 0) {
           window.scrollTo(0, 0);
@@ -44,19 +44,16 @@ export function SingleArticle({
 }: SingleArticleProps) {
   const navigate = useNavigate();
 
-  // Ensure URL is correct when component mounts or article changes
   useLayoutEffect(() => {
     const categorySlug = createSlug(article.category_name);
     const titleSlug = createSlug(article.title);
     const currentPath = `/${categorySlug}/${titleSlug}`;
-    
-    // Update URL if it doesn't match current article
+
     if (window.location.pathname !== currentPath) {
       navigate(currentPath, { replace: false });
     }
   }, [article, navigate]);
 
-  // Handle scrolling
   useEffect(() => {
     forceScrollTop();
   }, [article.id]);
@@ -66,22 +63,16 @@ export function SingleArticle({
   }
 
   const handleRelatedNewsClick = async (selectedArticle: NewsItem) => {
-    // First scroll to top
     await forceScrollTop();
-
-    // Update URL and state
+    
     const categorySlug = createSlug(selectedArticle.category_name);
     const titleSlug = createSlug(selectedArticle.title);
     const newPath = `/${categorySlug}/${titleSlug}`;
     
-    // Navigate first
     navigate(newPath, { replace: false });
     
-    // Then update state after a small delay
     setTimeout(() => {
       onNewsClick(selectedArticle);
-      
-      // Final scroll check
       requestAnimationFrame(() => {
         forceScrollTop();
       });
@@ -91,7 +82,6 @@ export function SingleArticle({
   return (
     <div className="max-w-[1200px] mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Main Content */}
         <div className="lg:col-span-8 space-y-6">
           <ArticleHeader 
             article={article}
@@ -100,7 +90,6 @@ export function SingleArticle({
           <ArticleContent article={article} />
         </div>
 
-        {/* Sidebar */}
         <aside className="lg:col-span-4">
           <div className="sticky top-24 space-y-6">
             <RelatedNews
@@ -111,6 +100,42 @@ export function SingleArticle({
           </div>
         </aside>
       </div>
+    </div>
+  );
+}
+
+export function ArticleContentSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-6 space-y-6 animate-pulse">
+        <div className="h-20 bg-muted rounded w-full" />
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="h-4 bg-muted rounded w-full" />
+              <div className="h-4 bg-muted rounded w-11/12" />
+              <div className="h-4 bg-muted rounded w-4/5" />
+            </div>
+          ))}
+        </div>
+        <div className="h-12 bg-muted rounded w-full mt-8" />
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ArticleHeaderSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-10 w-24 bg-muted rounded" />
+      <div className="space-y-4">
+        <div className="h-12 bg-muted rounded-lg w-3/4" />
+        <div className="flex gap-4">
+          <div className="h-6 w-24 bg-muted rounded" />
+          <div className="h-6 w-32 bg-muted rounded" />
+        </div>
+      </div>
+      <div className="aspect-video bg-muted rounded-lg" />
     </div>
   );
 }

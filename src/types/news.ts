@@ -8,7 +8,11 @@ export interface NewsItem {
   content: string;
   date_unparsed: string;
   slug: string;        
-  category_slug: string;  
+  category_slug: string; 
+  summary: string;
+  keywords: string[];
+  suggested_links: string[];
+  meta_description: string; 
 }
 
 export const PREDEFINED_CATEGORIES = [

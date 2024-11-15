@@ -15,6 +15,8 @@ interface NewsCardProps {
 
 export const NewsCard = forwardRef<HTMLDivElement, NewsCardProps>(
   ({ article, onClick, isMain = false }, ref) => {
+    const previewSummary = article.summary || article.content.replace(/#{1,6}\s[^\n]+/g, '').trim();
+
     if (isMain) {
       return (
         <Card
@@ -46,7 +48,7 @@ export const NewsCard = forwardRef<HTMLDivElement, NewsCardProps>(
                 className="w-full h-full object-cover rounded-md"
               />
             </div>
-            <p className="text-muted-foreground line-clamp-3">{article.content}</p>
+            <p className="text-muted-foreground line-clamp-3">{previewSummary}</p>
           </CardContent>
           <CardFooter>
             <Button
@@ -96,47 +98,3 @@ export const NewsCard = forwardRef<HTMLDivElement, NewsCardProps>(
 );
 
 NewsCard.displayName = 'NewsCard';
-
-// Optional: Add a skeleton loader component
-export function NewsCardSkeleton({ isMain = false }: { isMain?: boolean }) {
-  if (isMain) {
-    return (
-      <Card className="animate-pulse">
-        <CardHeader className="pb-2">
-          <div className="space-y-3">
-            <div className="h-8 bg-muted rounded w-3/4" />
-            <div className="flex gap-2">
-              <div className="h-5 bg-muted rounded w-24" />
-              <div className="h-5 bg-muted rounded w-32" />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-72 bg-muted rounded mb-4" />
-          <div className="space-y-2">
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-5/6" />
-            <div className="h-4 bg-muted rounded w-4/6" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="animate-pulse">
-      <CardHeader className="pb-2">
-        <div className="flex gap-4">
-          <div className="w-24 h-24 bg-muted rounded" />
-          <div className="flex-1 space-y-2">
-            <div className="h-5 bg-muted rounded w-3/4" />
-            <div className="flex gap-2">
-              <div className="h-4 bg-muted rounded w-20" />
-              <div className="h-4 bg-muted rounded w-24" />
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-    </Card>
-  );
-}
