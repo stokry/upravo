@@ -42,7 +42,7 @@ export default function NewsPortal() {
     setIsLoading(true);
     setError(null);
     try {
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL; 
+      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
       const apiKey = import.meta.env.VITE_SUPABASE_API_KEY;
       
       const params = new URLSearchParams({
