@@ -14,18 +14,16 @@ export function CategoryNav({
   onCategoryChange 
 }: CategoryNavProps) {
   return (
-    <nav className="flex gap-2 overflow-x-auto pb-2">
+    <nav className="flex items-center -mx-2 overflow-x-auto scrollbar-hide">
       {categories.map((category) => (
         <Button
           key={category}
-          variant={selectedCategory === category ? "default" : "outline"}
-          size="sm"
+          variant="ghost"
           onClick={() => onCategoryChange(category)}
           className={cn(
-            "flex-shrink-0 transition-colors",
-            selectedCategory === category 
-              ? "bg-brand hover:bg-brand-light text-white"
-              : "hover:text-brand border-brand/20 hover:border-brand"
+            "px-3 h-12 rounded-none border-b-2 border-transparent",
+            selectedCategory === category && "border-brand text-brand",
+            "hover:bg-transparent hover:text-brand transition-colors"
           )}
         >
           {category}

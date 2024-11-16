@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+
 
 // Components
 import { Header } from '@/components/Header/Header';
 import { NewsGrid } from '@/components/News/NewsGrid';
 import { SingleArticle } from '@/components/News/SingleArticle';
+import { PageSEO } from '@/components/SEO/PageSEO';
 
 // Types & Constants
 import type { NewsItem, CategoryType } from '@/types/news';
@@ -15,145 +16,36 @@ import { PREDEFINED_CATEGORIES } from '@/types/news';
 import { createSlug } from '@/utils/seo';
 import { getCategoryFromSlug } from '@/utils/category';
 
-const categories: CategoryType[] = ['Sve', ...PREDEFINED_CATEGORIES];
+// Hooks
+import { useNewsData } from '@/hooks/useNewsData';
+import { useScrollToTop } from '@/hooks/useScrollToTop';
 
-const forceScrollTop = () => {
-  requestAnimationFrame(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  });
-};
+const categories: CategoryType[] = ['Sve', ...PREDEFINED_CATEGORIES];
 
 export default function NewsPortal() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { forceScrollTop } = useScrollToTop();
+  
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('Sve');
   const [selectedArticle, setSelectedArticle] = useState<NewsItem | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const loadedIds = useRef<Set<number>>(new Set());
-
-  const fetchNews = useCallback(async (pageNumber: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const apiKey = import.meta.env.VITE_SUPABASE_API_KEY;
-      
-      const params = new URLSearchParams({
-        apikey: apiKey,
-        order: 'date_unparsed.desc',
-        limit: '12',
-        offset: ((pageNumber - 1) * 12).toString(),
-      });
-
-      if (selectedCategory === 'Sve') {
-        const categoriesQuery = PREDEFINED_CATEGORIES.map(cat => `"${cat}"`).join(',');
-        params.append('category_name', `in.(${categoriesQuery})`);
-      } else {
-        params.append('category_name', `eq.${selectedCategory}`);
-      }
-
-      const response = await fetch(`${baseUrl}?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch news');
-      const data = await response.json() as NewsItem[];
-      
-      const newItems = data.filter(item => 
-        !loadedIds.current.has(item.id) && 
-        (selectedCategory === 'Sve' ? PREDEFINED_CATEGORIES.includes(item.category_name as typeof PREDEFINED_CATEGORIES[number]) : true)
-      );
-      
-      newItems.forEach(item => loadedIds.current.add(item.id));
-
-      setNewsItems(prevItems => {
-        const combinedItems = [...prevItems, ...newItems];
-        return combinedItems.sort((a, b) => 
-          new Date(b.date_unparsed).getTime() - new Date(a.date_unparsed).getTime()
-        );
-      });
-      
-      setHasMore(data.length === 12);
-    } catch (err) {
-      setError('Failed to load news. Please try again later.');
-      console.error('Error fetching news:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedCategory]);
-
-  const getPageTitle = useCallback(() => {
-    if (selectedArticle) {
-      return `${selectedArticle.title} | Brzi.info`;
-    }
-    if (selectedCategory !== 'Sve') {
-      return `${selectedCategory} Vijesti | Brzi.info`;
-    }
-    return 'Brzi.info | Najnovije vijesti';
-  }, [selectedArticle, selectedCategory]);
-
-  const getMetaDescription = useCallback(() => {
-    if (selectedArticle) {
-      return selectedArticle.meta_description || selectedArticle.summary;
-    }
-    if (selectedCategory !== 'Sve') {
-      return `Najnovije vijesti iz kategorije ${selectedCategory}. Pratite najnovije vijesti i događanja uživo.`;
-    }
-    return 'Pratite najnovije vijesti i događanja uživo na Vijesti Uživo - vaš izvor za najnovije vijesti iz Hrvatske i svijeta.';
-  }, [selectedArticle, selectedCategory]);
-
-  const getCurrentUrl = useCallback(() => {
-    const baseUrl = window.location.origin;
-    if (selectedArticle) {
-      return `${baseUrl}/${createSlug(selectedArticle.category_name)}/${createSlug(selectedArticle.title)}`;
-    }
-    if (selectedCategory !== 'Sve') {
-      return `${baseUrl}/${createSlug(selectedCategory)}`;
-    }
-    return baseUrl;
-  }, [selectedArticle, selectedCategory]);
-
-  const getMetaTags = useCallback(() => {
-    if (selectedArticle) {
-      return (
-        <>
-          <meta property="og:type" content="article" />
-          <meta property="og:title" content={selectedArticle.title} />
-          <meta property="og:description" content={selectedArticle.meta_description || selectedArticle.summary} />
-          <meta property="og:image" content={selectedArticle.image_url} />
-          <meta property="og:url" content={getCurrentUrl()} />
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:image" content={selectedArticle.image_url} />
-          <meta property="article:published_time" content={new Date(selectedArticle.date_unparsed).toISOString()} />
-          <meta property="article:section" content={selectedArticle.category_name} />
-          <meta name="keywords" content={selectedArticle.keywords?.join(', ') || `vijesti, ${selectedArticle.category_name.toLowerCase()}, hrvatska, novosti`} />
-          {selectedArticle.suggested_links?.map((link, index) => (
-            <link key={index} rel="related" href={link} />
-          ))}
-        </>
-      );
-    }
-
-    return (
-      <meta name="keywords" content={
-        selectedCategory !== 'Sve'
-          ? `vijesti, ${selectedCategory.toLowerCase()}, hrvatska, novosti, uživo`
-          : 'vijesti, hrvatska, najnovije vijesti, uživo, novosti, svijet, regija'
-      } />
-    );
-  }, [selectedArticle, selectedCategory, getCurrentUrl]);
+  
+  const {
+    newsItems,
+    isLoading,
+    error,
+    page,
+    setPage,
+    hasMore,
+    fetchNews,
+    resetNewsData
+  } = useNewsData();
 
   const handleCategoryChange = (category: CategoryType) => {
     if (category === selectedCategory) return;
     
     setSelectedArticle(null);
-    setNewsItems([]);
-    loadedIds.current.clear();
-    setPage(1);
-    setHasMore(true);
+    resetNewsData();
     setSelectedCategory(category);
 
     if (category === 'Sve') {
@@ -184,6 +76,19 @@ export default function NewsPortal() {
     }
     forceScrollTop();
   };
+
+  const lastNewsElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (isLoading) return;
+    if (node) {
+      const observer = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage(prevPage => prevPage + 1);
+        }
+      });
+      observer.observe(node);
+      return () => observer.disconnect();
+    }
+  }, [isLoading, hasMore, setPage]);
 
   // URL handling effect
   useEffect(() => {
@@ -225,7 +130,6 @@ export default function NewsPortal() {
           if (article) {
             setSelectedArticle(article);
             setSelectedCategory(article.category_name as CategoryType);
-            setNewsItems(data);
             forceScrollTop();
           } else {
             throw new Error('Article not found');
@@ -239,66 +143,25 @@ export default function NewsPortal() {
         if (category && category !== selectedCategory) {
           setSelectedCategory(category);
           setSelectedArticle(null);
-          setNewsItems([]);
-          loadedIds.current.clear();
-          setPage(1);
+          resetNewsData();
           forceScrollTop();
         }
       }
     };
   
     loadArticleFromUrl();
-  }, [location.pathname, newsItems, navigate, selectedCategory]);
+  }, [location.pathname, newsItems, navigate, selectedCategory, resetNewsData, forceScrollTop]);
 
   useEffect(() => {
-    fetchNews(page);
+    fetchNews(page, selectedCategory);
   }, [fetchNews, page, selectedCategory]);
-
-  const lastNewsElementRef = useCallback((node: HTMLDivElement | null) => {
-    if (isLoading) return;
-    if (node) {
-      const observer = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && hasMore) {
-          setPage(prevPage => prevPage + 1);
-        }
-      });
-      observer.observe(node);
-      return () => observer.disconnect();
-    }
-  }, [isLoading, hasMore]);
 
   return (
     <>
-      <Helmet>
-        <title>{getPageTitle()}</title>
-        <meta name="description" content={getMetaDescription()} />
-        <link rel="canonical" href={getCurrentUrl()} />
-        {getMetaTags()}
-        {/* Structured Data for Article */}
-        {selectedArticle && (
-          <script type="application/ld+json">
-            {JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "NewsArticle",
-              "headline": selectedArticle.title,
-              "image": [selectedArticle.image_url],
-              "datePublished": new Date(selectedArticle.date_unparsed).toISOString(),
-              "articleSection": selectedArticle.category_name,
-              "keywords": selectedArticle.keywords,
-              "description": selectedArticle.meta_description || selectedArticle.summary,
-              "mainEntityOfPage": {
-                "@type": "WebPage",
-                "@id": getCurrentUrl()
-              },
-              "publisher": {
-                "@type": "Organization",
-                "name": "Brzi.info",
-                "url": window.location.origin
-              }
-            })}
-          </script>
-        )}
-      </Helmet>
+      <PageSEO 
+        article={selectedArticle} 
+        category={selectedCategory}
+      />
 
       <div className="min-h-screen bg-background font-sans">
         <div className="max-w-[1200px] mx-auto p-4 md:p-6 lg:p-8">

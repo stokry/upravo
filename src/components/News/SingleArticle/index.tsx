@@ -1,4 +1,3 @@
-// components/News/SingleArticle/index.tsx
 import { useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { NewsItem } from '@/types/news';
@@ -7,6 +6,7 @@ import { ArticleHeader } from './ArticleHeader';
 import { ArticleContent } from './ArticleContent';
 import { RelatedNews, RelatedNewsSkeleton } from '../RelatedNews';
 import { Card, CardContent } from '@/components/ui/card';
+import { PageSEO } from '@/components/SEO/PageSEO';
 
 interface SingleArticleProps {
   article: NewsItem;
@@ -80,27 +80,31 @@ export function SingleArticle({
   };
 
   return (
-    <div className="max-w-[1200px] mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
-          <ArticleHeader 
-            article={article}
-            onBack={onBack}
-          />
-          <ArticleContent article={article} />
-        </div>
-
-        <aside className="lg:col-span-4">
-          <div className="sticky top-24 space-y-6">
-            <RelatedNews
-              currentArticle={article}
-              newsItems={newsItems}
-              onArticleClick={handleRelatedNewsClick}
+    <>
+      <PageSEO article={article} />
+      
+      <div className="max-w-[1200px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-8 space-y-6">
+            <ArticleHeader 
+              article={article}
+              onBack={onBack}
             />
+            <ArticleContent article={article} />
           </div>
-        </aside>
+
+          <aside className="lg:col-span-4">
+            <div className="sticky top-24 space-y-6">
+              <RelatedNews
+                currentArticle={article}
+                newsItems={newsItems}
+                onArticleClick={handleRelatedNewsClick}
+              />
+            </div>
+          </aside>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
