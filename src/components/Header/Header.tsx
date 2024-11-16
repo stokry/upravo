@@ -1,6 +1,4 @@
-import { LiveBadge } from './LiveBadge';
 import { CategoryNav } from './CategoryNav';
-import { TopNav } from './TopNav';
 import type { CategoryType } from '@/types/news';
 
 interface HeaderProps {
@@ -10,39 +8,42 @@ interface HeaderProps {
 }
 
 export function Header({ categories, selectedCategory, onCategoryChange }: HeaderProps) {
+  // Filter out 'Sve' category and split remaining categories
+  const filteredCategories = categories.filter(cat => cat !== 'Sve');
+  const midpoint = Math.ceil(filteredCategories.length / 2);
+  const leftCategories = filteredCategories.slice(0, midpoint);
+  const rightCategories = filteredCategories.slice(midpoint);
+
   return (
     <header className="sticky top-0 bg-background z-10 border-b border-border">
-      {/* Top Bar */}
-      <div className="bg-brand text-white">
-        <div className="max-w-[1200px] mx-auto px-4">
-          <TopNav />
-        </div>
-      </div>
+      <div className="max-w-[1200px] mx-auto px-4">
+        <div className="flex items-center justify-between h-20">
+          {/* Left Categories */}
+          <CategoryNav 
+            categories={leftCategories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={onCategoryChange}
+            className="justify-end"
+          />
 
-      {/* Main Header */}
-      <div className="border-b border-border bg-background">
-        <div className="max-w-[1200px] mx-auto px-4 py-4 flex items-center justify-between">
+          {/* Logo */}
           <div 
-            className="flex items-center space-x-2 cursor-pointer" 
+            className="flex items-center cursor-pointer px-8" 
             onClick={() => onCategoryChange('Sve')}
           >
             <img 
               src="/logo.svg" 
               alt="Brzi.info Logo" 
-              className="h-8 w-auto"
+              className="h-12 w-auto" // Increased from h-8 to h-12
             />
           </div>
-          <LiveBadge />
-        </div>
-      </div>
 
-      {/* Navigation */}
-      <div className="bg-background shadow-sm">
-        <div className="max-w-[1200px] mx-auto px-4">
+          {/* Right Categories */}
           <CategoryNav 
-            categories={categories}
+            categories={rightCategories}
             selectedCategory={selectedCategory}
             onCategoryChange={onCategoryChange}
+            className="justify-start"
           />
         </div>
       </div>
