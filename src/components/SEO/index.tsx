@@ -13,63 +13,59 @@ interface SEOProps {
   isArticle?: boolean;
 }
 
-const DEFAULT_IMAGE = 'https://testara.vercel.app/static/images/default-share.jpg';
-const SITE_NAME = 'Brzi.info';
 const BASE_URL = 'https://brzi.info';
+const SITE_NAME = 'Brzi.info';
+const DEFAULT_IMAGE = 'https://brzi.info/default-share.jpg'; // Update with your default image
 
 export function SEO({
   title,
   description,
   canonical,
-  type = 'website',
-  image = DEFAULT_IMAGE,
+  type = 'article',
+  image,
   publishedTime,
-  section = 'Vijesti',
+  section,
   keywords = [],
   isArticle = true
 }: SEOProps) {
-  const fullTitle = `${title} - ${SITE_NAME}`;
-  const url = canonical ? `${BASE_URL}${canonical}` : BASE_URL;
-
   // Ensure image URL is absolute
-  const fullImageUrl = image.startsWith('http') ? image : `${BASE_URL}${image}`;
+  const fullImageUrl = image ? (image.startsWith('http') ? image : `${BASE_URL}${image}`) : DEFAULT_IMAGE;
+  
+  // Ensure canonical URL is absolute
+  const fullCanonicalUrl = canonical ? `${BASE_URL}${canonical}` : BASE_URL;
+  
+  // Create full title with site name
+  const fullTitle = `${title} - ${SITE_NAME}`;
 
   return (
     <Helmet>
-      {/* Force page reload for metadata update */}
+      {/* Force update meta tags */}
+      <meta charSet="utf-8" />
       <meta httpEquiv="x-ua-compatible" content="ie=edge" />
       
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
       <meta name="description" content={description} />
-      <link rel="canonical" href={url} />
+      <link rel="canonical" href={fullCanonicalUrl} />
 
       {/* Open Graph / Facebook */}
+      <meta property="og:site_name" content={SITE_NAME} />
       <meta property="og:type" content={isArticle ? 'article' : type} />
-      <meta property="og:url" content={url} />
+      <meta property="og:url" content={fullCanonicalUrl} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={fullImageUrl} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:site_name" content={SITE_NAME} />
 
-      {/* Twitter */}
+      {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={url} />
+      <meta name="twitter:site" content="@brzi_info" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={fullImageUrl} />
-
-      {/* Additional SEO Tags */}
-      <meta name="robots" content="max-image-preview:large" />
-      <meta name="author" content={SITE_NAME} />
-
-      {/* Keywords */}
-      {keywords.length > 0 && (
-        <meta name="keywords" content={keywords.join(', ')} />
-      )}
+      <meta name="twitter:url" content={fullCanonicalUrl} />
 
       {/* Article Specific Tags */}
       {isArticle && publishedTime && (
@@ -83,12 +79,14 @@ export function SEO({
 
       {/* Localization */}
       <meta property="og:locale" content="hr_HR" />
+      
+      {/* Keywords */}
+      {keywords.length > 0 && (
+        <meta name="keywords" content={keywords.join(', ')} />
+      )}
 
-      {/* Additional Meta */}
-      <meta name="theme-color" content="#8b1852" />
-      <meta name="mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      {/* Preconnect to your image domain */}
+      <link rel="preconnect" href={new URL(fullImageUrl).origin} />
     </Helmet>
   );
 }
