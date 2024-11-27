@@ -1,3 +1,4 @@
+// pages/ArticlePage.tsx
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -6,10 +7,10 @@ import { LatestNewsSidebar } from '../components/LatestNewsSidebar';
 import { fetchArticleBySlug, fetchLatestArticles } from '../utils/api';
 import { parseMarkdown } from '../utils/markdown';
 import { formatTimeAgo } from '../utils/dateUtils';
+import { useSEOUpdate } from '../hooks/useSEOUpdate';
 import type { Article } from '../types/Article';
 import '../styles/article.css';
 
-// Add structured data for articles
 const createArticleStructuredData = (article: Article) => ({
   "@context": "https://schema.org",
   "@type": "NewsArticle",
@@ -28,7 +29,7 @@ const createArticleStructuredData = (article: Article) => ({
     "name": "Brzi.info",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://brzi.info/logo.png" // Update with your actual logo URL
+      "url": "https://brzi.info/logo.png"
     }
   },
   "mainEntityOfPage": {
@@ -43,6 +44,9 @@ export function ArticlePage() {
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Use the SEO update hook
+  useSEOUpdate();
 
   useEffect(() => {
     async function loadData() {
@@ -65,6 +69,9 @@ export function ArticlePage() {
         setArticle(articleData);
         setLatestArticles(latestNews.filter(news => news.id !== articleData.id));
         setError(null);
+
+        // Update the window title
+        document.title = `${articleData.title} - Brzi.info`;
       } catch (error) {
         console.error('Error fetching article:', error);
         setError(error instanceof Error ? error.message : 'Failed to fetch article');
@@ -100,7 +107,7 @@ export function ArticlePage() {
     <main className="py-4 md:py-6 lg:py-8">
       <SEO 
         title={article.title}
-        description={article.summary || article.meta_description || ''}
+        description={article.summary || article.meta_description || article.title.slice(0, 150)}
         canonical={`/${article.category_name.toLowerCase()}/${slug}`}
         type="article"
         image={article.image_url}
@@ -110,7 +117,6 @@ export function ArticlePage() {
         isArticle={true}
       />
       
-      {/* Additional meta tags for better SEO */}
       <Helmet>
         <link rel="alternate" hrefLang="hr" href={fullUrl} />
         <meta property="article:author" content="https://brzi.info" />
@@ -122,11 +128,9 @@ export function ArticlePage() {
 
       <div className="container px-4 mx-auto">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Article Content */}
           <div className="flex-grow lg:w-3/4">
             <article className="bg-white rounded-sm shadow-sm overflow-hidden" itemScope itemType="https://schema.org/NewsArticle">
               <div className="p-4 md:p-6">
-                {/* Article Header */}
                 <div className="flex items-center text-sm text-gray-500 mb-4">
                   <Link 
                     to={`/${article.category_name.toLowerCase()}`}
@@ -140,19 +144,16 @@ export function ArticlePage() {
                   </time>
                 </div>
 
-                {/* Title */}
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4" itemProp="headline">
                   {article.title}
                 </h1>
 
-                {/* Summary */}
                 {article.summary && (
                   <p className="text-lg text-gray-600 mb-6" itemProp="description">
                     {article.summary}
                   </p>
                 )}
 
-                {/* Featured Image */}
                 {article.image_url && (
                   <div className="mb-6">
                     <img 
@@ -160,18 +161,17 @@ export function ArticlePage() {
                       alt={article.title}
                       className="w-full rounded-sm"
                       itemProp="image"
+                      loading="eager"
                     />
                   </div>
                 )}
 
-                {/* Article Content */}
                 <div 
                   className="article-content prose max-w-none"
                   dangerouslySetInnerHTML={{ __html: parsedContent }}
                   itemProp="articleBody"
                 />
 
-                {/* Keywords */}
                 {article.keywords?.length > 0 && (
                   <div className="mt-8 pt-8 border-t">
                     <div className="flex flex-wrap gap-2">
@@ -191,7 +191,6 @@ export function ArticlePage() {
             </article>
           </div>
 
-          {/* Sidebar */}
           <aside className="lg:w-1/4">
             <LatestNewsSidebar articles={latestArticles} />
           </aside>
