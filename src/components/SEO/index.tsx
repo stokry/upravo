@@ -14,7 +14,7 @@ interface SEOProps {
 
 const DEFAULT_IMAGE = 'https://testara.vercel.app/static/images/default-share.jpg';
 const SITE_NAME = 'Brzi.info';
-const BASE_URL = 'https://testara.vercel.app';
+const BASE_URL = 'https://brzi.info';
 
 export function SEO({
   title,
