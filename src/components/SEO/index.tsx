@@ -1,3 +1,4 @@
+import React from 'react';
 import { Helmet } from 'react-helmet';
 
 interface SEOProps {
@@ -23,15 +24,21 @@ export function SEO({
   type = 'website',
   image = DEFAULT_IMAGE,
   publishedTime,
-  section,
+  section = 'Vijesti',
   keywords = [],
-  isArticle = false
+  isArticle = true
 }: SEOProps) {
   const fullTitle = `${title} - ${SITE_NAME}`;
   const url = canonical ? `${BASE_URL}${canonical}` : BASE_URL;
 
+  // Ensure image URL is absolute
+  const fullImageUrl = image.startsWith('http') ? image : `${BASE_URL}${image}`;
+
   return (
     <Helmet>
+      {/* Force page reload for metadata update */}
+      <meta httpEquiv="x-ua-compatible" content="ie=edge" />
+      
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
@@ -39,22 +46,24 @@ export function SEO({
       <link rel="canonical" href={url} />
 
       {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
+      <meta property="og:type" content={isArticle ? 'article' : type} />
       <meta property="og:url" content={url} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
+      <meta property="og:image" content={fullImageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
       <meta property="og:site_name" content={SITE_NAME} />
 
       {/* Twitter */}
-      <meta property="twitter:card" content="summary_large_image" />
-      <meta property="twitter:url" content={url} />
-      <meta property="twitter:title" content={fullTitle} />
-      <meta property="twitter:description" content={description} />
-      <meta property="twitter:image" content={image} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:url" content={url} />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={fullImageUrl} />
 
       {/* Additional SEO Tags */}
-      <meta name="robots" content="index, follow" />
+      <meta name="robots" content="max-image-preview:large" />
       <meta name="author" content={SITE_NAME} />
 
       {/* Keywords */}
@@ -64,10 +73,12 @@ export function SEO({
 
       {/* Article Specific Tags */}
       {isArticle && publishedTime && (
-        <meta property="article:published_time" content={publishedTime} />
-      )}
-      {isArticle && section && (
-        <meta property="article:section" content={section} />
+        <>
+          <meta property="article:published_time" content={publishedTime} />
+          <meta property="article:modified_time" content={publishedTime} />
+          <meta property="article:section" content={section} />
+          <meta property="article:publisher" content={BASE_URL} />
+        </>
       )}
 
       {/* Localization */}
