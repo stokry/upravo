@@ -44,12 +44,6 @@ export function CategoryPage() {
     }
   }, [category, page, hasMore, loadingMore, articles]);
 
-  useInfiniteScroll({
-    loading: loading || loadingMore,
-    hasMore,
-    onLoadMore: loadMore
-  });
-
   // Reset state when category changes
   useEffect(() => {
     setArticles([]);
@@ -57,6 +51,7 @@ export function CategoryPage() {
     setHasMore(true);
     setLoading(true);
     setError(null);
+    window.scrollTo(0, 0);
   }, [category]);
 
   // Initial load
@@ -80,6 +75,13 @@ export function CategoryPage() {
 
     loadInitialArticles();
   }, [category]);
+
+  useInfiniteScroll({
+    loading: loading || loadingMore,
+    hasMore,
+    onLoadMore: loadMore,
+    threshold: 500 // Smaller threshold for more responsive loading
+  });
 
   if (loading && page === 1) {
     return (
