@@ -26,10 +26,8 @@ export function SportPage() {
       let newArticles: Article[] = [];
 
       if (sport) {
-        // Fetch articles for specific sport category
         newArticles = await fetchArticlesByCategory(sport, nextPage);
       } else {
-        // Fetch articles for all sport categories
         const sportCategories = Object.values(SPORT_CATEGORIES);
         const promises = sportCategories.map(category => 
           fetchArticlesByCategory(category, nextPage)
@@ -72,10 +70,8 @@ export function SportPage() {
         let initialArticles: Article[] = [];
 
         if (sport) {
-          // Fetch articles for specific sport category
           initialArticles = await fetchArticlesByCategory(sport, 1);
         } else {
-          // Fetch articles for all sport categories
           const sportCategories = Object.values(SPORT_CATEGORIES);
           const promises = sportCategories.map(category => 
             fetchArticlesByCategory(category, 1)
@@ -97,8 +93,8 @@ export function SportPage() {
       }
     }
 
-    window.scrollTo(0, 0);
     loadInitialArticles();
+    window.scrollTo(0, 0);
   }, [sport]);
 
   const pageTitle = sport 
