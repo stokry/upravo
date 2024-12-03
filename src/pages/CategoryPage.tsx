@@ -16,44 +16,14 @@ export function CategoryPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const isInitialMount = useRef(true);
+  const mountedRef = useRef(true);
+  const initialLoadRef = useRef(true);
 
   const categoryDisplayName = category ? CATEGORY_NAMES[category.toUpperCase()] || category : '';
 
-  const loadMore = useCallback(async () => {
-    if (!category || loadingMore || !hasMore) return;
-
-    try {
-      setLoadingMore(true);
-      const nextPage = page + 1;
-      const newArticles = await fetchArticlesByCategory(category, nextPage);
-      
-      if (newArticles && newArticles.length > 0) {
-        setArticles(prev => {
-          const existingIds = new Set(prev.map(article => article.id));
-          const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
-          
-          if (uniqueNewArticles.length > 0) {
-            setPage(nextPage);
-            setHasMore(uniqueNewArticles.length >= 10);
-            return [...prev, ...uniqueNewArticles];
-          }
-          setHasMore(false);
-          return prev;
-        });
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('Error loading more articles:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [category, page, hasMore, loadingMore]);
-
-  // Reset state when category changes
+  // Reset everything when category changes
   useEffect(() => {
-    if (!isInitialMount.current) {
+    if (!initialLoadRef.current) {
       setArticles([]);
       setPage(1);
       setHasMore(true);
@@ -61,31 +31,72 @@ export function CategoryPage() {
       setError(null);
       window.scrollTo(0, 0);
     }
-    isInitialMount.current = false;
+    initialLoadRef.current = false;
   }, [category]);
+
+  const loadMore = useCallback(async () => {
+    if (!category || loadingMore || !hasMore || !mountedRef.current) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const newArticles = await fetchArticlesByCategory(category, nextPage);
+      
+      if (mountedRef.current) {
+        if (newArticles?.length > 0) {
+          setArticles(prev => {
+            const existingIds = new Set(prev.map(article => article.id));
+            const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
+            
+            if (uniqueNewArticles.length > 0) {
+              setPage(nextPage);
+              setHasMore(uniqueNewArticles.length >= 10);
+              return [...prev, ...uniqueNewArticles];
+            }
+            
+            setHasMore(false);
+            return prev;
+          });
+        } else {
+          setHasMore(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading more articles:', error);
+      if (mountedRef.current) {
+        setHasMore(false);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoadingMore(false);
+      }
+    }
+  }, [category, page, hasMore, loadingMore]);
 
   // Initial load
   useEffect(() => {
-    let mounted = true;
+    let isCancelled = false;
 
     async function loadInitialArticles() {
       try {
         if (!category) {
           throw new Error('Category is required');
         }
+
         const data = await fetchArticlesByCategory(category, 1);
-        if (mounted) {
+        
+        if (!isCancelled && mountedRef.current) {
           setArticles(data || []);
           setHasMore((data?.length || 0) >= 10);
           setError(null);
         }
       } catch (error) {
-        if (mounted) {
+        if (!isCancelled && mountedRef.current) {
           console.error('Error fetching articles:', error);
           setError(error instanceof Error ? error.message : 'Failed to fetch articles');
         }
       } finally {
-        if (mounted) {
+        if (!isCancelled && mountedRef.current) {
           setLoading(false);
         }
       }
@@ -94,15 +105,23 @@ export function CategoryPage() {
     loadInitialArticles();
 
     return () => {
-      mounted = false;
+      isCancelled = true;
     };
   }, [category]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Initialize infinite scroll
   useInfiniteScroll({
     loading: loading || loadingMore,
     hasMore,
     onLoadMore: loadMore,
-    threshold: 800, // Increased threshold for earlier trigger
+    threshold: 800
   });
 
   if (loading && page === 1) {
