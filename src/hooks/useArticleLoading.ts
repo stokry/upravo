@@ -1,3 +1,4 @@
+// useArticleLoading.ts
 import { useState, useCallback, useEffect } from 'react';
 import { fetchArticlesByCategory } from '../utils/api';
 import type { Article } from '../types/Article';
@@ -7,87 +8,58 @@ interface UseArticleLoadingProps {
   pageSize?: number;
 }
 
-interface ArticleLoadingState {
-  articles: Article[];
-  loading: boolean;
-  error: string | null;
-  hasMore: boolean;
-  loadingMore: boolean;
-}
-
 export function useArticleLoading({ category, pageSize = 9 }: UseArticleLoadingProps) {
-  const [state, setState] = useState<ArticleLoadingState>({
-    articles: [],
-    loading: true,
-    error: null,
-    hasMore: true,
-    loadingMore: false
-  });
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const loadMore = useCallback(async () => {
-    if (!category || state.loadingMore || !state.hasMore) return;
+    if (!category || loadingMore || !hasMore) return;
 
-    setState(prev => ({ ...prev, loadingMore: true }));
-    
+    setLoadingMore(true);
     try {
       const nextPage = page + 1;
       const newArticles = await fetchArticlesByCategory(category, nextPage);
       
-      setState(prev => {
-        const existingIds = new Set(prev.articles.map(article => article.id));
+      setArticles(prev => {
+        const existingIds = new Set(prev.map(article => article.id));
         const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
         
         if (uniqueNewArticles.length > 0) {
-          return {
-            ...prev,
-            articles: [...prev.articles, ...uniqueNewArticles],
-            hasMore: uniqueNewArticles.length >= pageSize,
-            loadingMore: false
-          };
+          setPage(nextPage);
+          setHasMore(uniqueNewArticles.length >= pageSize);
+          return [...prev, ...uniqueNewArticles];
         }
         
-        return {
-          ...prev,
-          hasMore: false,
-          loadingMore: false
-        };
+        setHasMore(false);
+        return prev;
       });
-      
-      setPage(nextPage);
     } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : 'Failed to load more articles',
-        loadingMore: false
-      }));
+      console.error('Error loading more articles:', error);
+    } finally {
+      setLoadingMore(false);
     }
-  }, [category, page, pageSize, state.loadingMore, state.hasMore]);
+  }, [category, page, hasMore, loadingMore, pageSize]);
 
   useEffect(() => {
     async function loadInitialArticles() {
       if (!category) return;
-
-      setState(prev => ({ ...prev, loading: true }));
+      
+      setLoading(true);
       setPage(1);
-
+      
       try {
         const data = await fetchArticlesByCategory(category, 1);
-        setState({
-          articles: data,
-          loading: false,
-          error: null,
-          hasMore: data.length >= pageSize,
-          loadingMore: false
-        });
+        setArticles(data || []);
+        setHasMore((data?.length || 0) >= pageSize);
+        setError(null);
       } catch (error) {
-        setState({
-          articles: [],
-          loading: false,
-          error: error instanceof Error ? error.message : 'Failed to fetch articles',
-          hasMore: false,
-          loadingMore: false
-        });
+        setError(error instanceof Error ? error.message : 'Failed to fetch articles');
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -96,7 +68,11 @@ export function useArticleLoading({ category, pageSize = 9 }: UseArticleLoadingP
   }, [category, pageSize]);
 
   return {
-    ...state,
+    articles,
+    loading,
+    error,
+    hasMore,
+    loadingMore,
     loadMore
   };
 }
