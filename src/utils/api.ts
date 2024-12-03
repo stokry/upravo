@@ -78,7 +78,7 @@ export async function fetchLatestArticles(limit: number = 5): Promise<Article[]>
 }
 
 export async function fetchArticlesByCategory(category: string, page: number = 1): Promise<Article[]> {
-  const limit = 10;
+  const limit = 9;
   const offset = (page - 1) * limit;
   const data = await fetchFromAPI(
     `?category_name=ilike.${category}&order=date_unparsed.desc&limit=${limit}&offset=${offset}`

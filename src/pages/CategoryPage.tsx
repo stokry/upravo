@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { CategoryHeader } from '../components/CategoryHeader';
 import { CategoryArticleGrid } from '../components/CategoryArticleGrid';
+import { LoadMoreButton } from '../components/LoadMoreButton';
 import { fetchArticlesByCategory } from '../utils/api';
-import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import type { Article } from '../types/Article';
 import { CATEGORY_NAMES } from '../config/constants';
 
@@ -27,41 +27,42 @@ export function CategoryPage() {
       const nextPage = page + 1;
       const newArticles = await fetchArticlesByCategory(category, nextPage);
       
-      const existingIds = new Set(articles.map(article => article.id));
-      const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
-      
-      if (uniqueNewArticles.length > 0) {
-        setArticles(prev => [...prev, ...uniqueNewArticles]);
-        setPage(nextPage);
-        setHasMore(uniqueNewArticles.length >= 10);
-      } else {
+      setArticles(prev => {
+        const existingIds = new Set(prev.map(article => article.id));
+        const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
+        
+        if (uniqueNewArticles.length > 0) {
+          setPage(nextPage);
+          setHasMore(uniqueNewArticles.length >= 9);
+          return [...prev, ...uniqueNewArticles];
+        }
+        
         setHasMore(false);
-      }
+        return prev;
+      });
     } catch (error) {
       console.error('Error loading more articles:', error);
     } finally {
       setLoadingMore(false);
     }
-  }, [category, page, hasMore, loadingMore, articles]);
-
-  useEffect(() => {
-    setArticles([]);
-    setPage(1);
-    setHasMore(true);
-    setLoading(true);
-    setError(null);
-    window.scrollTo(0, 0);
-  }, [category]);
+  }, [category, page, hasMore, loadingMore]);
 
   useEffect(() => {
     async function loadInitialArticles() {
       try {
+        setLoading(true);
+        setArticles([]);
+        setPage(1);
+        setHasMore(true);
+        setError(null);
+
         if (!category) {
           throw new Error('Category is required');
         }
+
         const data = await fetchArticlesByCategory(category, 1);
         setArticles(data);
-        setHasMore(data.length >= 10);
+        setHasMore(data.length >= 9);
         setError(null);
       } catch (error) {
         console.error('Error fetching articles:', error);
@@ -71,16 +72,9 @@ export function CategoryPage() {
       }
     }
 
+    window.scrollTo(0, 0);
     loadInitialArticles();
   }, [category]);
-
-  const lastElementRef = useInfiniteScroll({
-    loading: loading || loadingMore,
-    hasMore,
-    onLoadMore: loadMore,
-    rootMargin: '300px',
-    threshold: 0.1
-  });
 
   if (loading && page === 1) {
     return (
@@ -109,13 +103,12 @@ export function CategoryPage() {
 
       <div className="container px-4 mx-auto">
         <CategoryHeader categoryDisplayName={categoryDisplayName} />
-        <CategoryArticleGrid articles={articles} lastElementRef={lastElementRef} />
-
-        {loadingMore && (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
-          </div>
-        )}
+        <CategoryArticleGrid articles={articles} />
+        <LoadMoreButton 
+          onClick={loadMore}
+          loading={loadingMore}
+          hasMore={hasMore}
+        />
       </div>
     </main>
   );
