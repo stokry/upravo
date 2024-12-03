@@ -5,71 +5,100 @@ interface UseInfiniteScrollProps {
   hasMore: boolean;
   onLoadMore: () => void;
   threshold?: number;
+  container?: HTMLElement | null; // Allow custom container
 }
 
 export function useInfiniteScroll({
   loading,
   hasMore,
   onLoadMore,
-  threshold = 1000
+  threshold = 1000,
+  container = null
 }: UseInfiniteScrollProps) {
+  // Refs to track current state without triggering re-renders
   const loadingRef = useRef(loading);
   const hasMoreRef = useRef(hasMore);
+  const containerRef = useRef(container);
 
+  // Update refs when props change
   useEffect(() => {
     loadingRef.current = loading;
     hasMoreRef.current = hasMore;
-  }, [loading, hasMore]);
+    containerRef.current = container;
+  }, [loading, hasMore, container]);
 
   const checkScrollPosition = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current) return;
 
-    const scrollPosition = Math.max(
-      window.pageYOffset,
-      document.documentElement.scrollTop,
-      document.body.scrollTop
-    );
-    
-    const windowHeight = window.innerHeight;
-    const documentHeight = Math.max(
-      document.documentElement.scrollHeight,
-      document.body.scrollHeight
-    );
+    // Get the scrollable container (either custom container, window, or document)
+    const scrollContainer = containerRef.current || window;
+    const doc = document.documentElement || document.body;
 
-    if (documentHeight - (scrollPosition + windowHeight) < threshold) {
+    let scrollPosition: number;
+    let containerHeight: number;
+    let totalHeight: number;
+
+    if (scrollContainer === window) {
+      // Window scroll calculations
+      scrollPosition = window.scrollY || window.pageYOffset || doc.scrollTop;
+      containerHeight = window.innerHeight;
+      totalHeight = Math.max(
+        doc.scrollHeight,
+        doc.offsetHeight,
+        doc.clientHeight
+      );
+    } else {
+      // Custom container calculations
+      scrollPosition = scrollContainer.scrollTop;
+      containerHeight = scrollContainer.clientHeight;
+      totalHeight = scrollContainer.scrollHeight;
+    }
+
+    // Calculate remaining scroll space
+    const remainingScroll = totalHeight - (scrollPosition + containerHeight);
+
+    // Trigger load more if we're within threshold
+    if (remainingScroll < threshold) {
       onLoadMore();
     }
   }, [onLoadMore, threshold]);
 
-  useEffect(() => {
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          checkScrollPosition();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    const handleTouchMove = () => {
-      handleScroll();
-    };
-
-    // Add event listeners with passive option for better performance
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('gesturechange', handleTouchMove, { passive: true });
-
-    // Initial check
-    checkScrollPosition();
-
+  // Debounced scroll handler
+  const debouncedCheck = useCallback(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('gesturechange', handleTouchMove);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      timeoutId = setTimeout(() => {
+        checkScrollPosition();
+        timeoutId = null;
+      }, 100);
     };
   }, [checkScrollPosition]);
+
+  useEffect(() => {
+    const scrollHandler = debouncedCheck();
+    const targetElement = containerRef.current || window;
+
+    // Add event listeners with passive option for better performance
+    targetElement.addEventListener('scroll', scrollHandler, { passive: true });
+    targetElement.addEventListener('touchmove', scrollHandler, { passive: true });
+    targetElement.addEventListener('wheel', scrollHandler, { passive: true });
+
+    // Check initial position (important for short content pages)
+    checkScrollPosition();
+
+    // Cleanup
+    return () => {
+      targetElement.removeEventListener('scroll', scrollHandler);
+      targetElement.removeEventListener('touchmove', scrollHandler);
+      targetElement.removeEventListener('wheel', scrollHandler);
+      
+      // Clear any pending timeouts
+      scrollHandler();
+    };
+  }, [checkScrollPosition, debouncedCheck]);
 }
