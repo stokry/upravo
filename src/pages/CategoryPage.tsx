@@ -4,6 +4,7 @@ import { SEO } from '../components/SEO';
 import { formatTimeAgo } from '../utils/dateUtils';
 import { generateArticleUrl } from '../utils/urlUtils';
 import { fetchArticlesByCategory } from '../utils/api';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 import type { Article } from '../types/Article';
 import { CATEGORY_NAMES } from '../config/constants';
 
@@ -17,6 +18,37 @@ export function CategoryPage() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const categoryDisplayName = category ? CATEGORY_NAMES[category.toUpperCase()] || category : '';
+
+  const loadMore = useCallback(async () => {
+    if (!category || loadingMore || !hasMore) return;
+
+    try {
+      setLoadingMore(true);
+      const nextPage = page + 1;
+      const newArticles = await fetchArticlesByCategory(category, nextPage);
+      
+      const existingIds = new Set(articles.map(article => article.id));
+      const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
+      
+      if (uniqueNewArticles.length > 0) {
+        setArticles(prev => [...prev, ...uniqueNewArticles]);
+        setPage(nextPage);
+        setHasMore(uniqueNewArticles.length >= 10);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more articles:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [category, page, hasMore, loadingMore, articles]);
+
+  useInfiniteScroll({
+    loading: loading || loadingMore,
+    hasMore,
+    onLoadMore: loadMore
+  });
 
   // Reset state when category changes
   useEffect(() => {
@@ -48,50 +80,6 @@ export function CategoryPage() {
 
     loadInitialArticles();
   }, [category]);
-
-  const loadMore = useCallback(async () => {
-    if (!category || loadingMore || !hasMore) return;
-
-    try {
-      setLoadingMore(true);
-      const nextPage = page + 1;
-      const newArticles = await fetchArticlesByCategory(category, nextPage);
-      
-      // Check for duplicates and only add unique articles
-      const existingIds = new Set(articles.map(article => article.id));
-      const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
-      
-      if (uniqueNewArticles.length > 0) {
-        setArticles(prev => [...prev, ...uniqueNewArticles]);
-        setPage(nextPage);
-        setHasMore(uniqueNewArticles.length >= 10);
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('Error loading more articles:', error);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [category, page, hasMore, loadingMore, articles]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          loadMore();
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    const trigger = document.getElementById('infinite-scroll-trigger');
-    if (trigger) {
-      observer.observe(trigger);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, loadMore]);
 
   if (loading && page === 1) {
     return (
@@ -144,6 +132,7 @@ export function CategoryPage() {
                     src={article.image_url}
                     alt={article.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = '/placeholder-image.jpg';
@@ -166,11 +155,8 @@ export function CategoryPage() {
           ))}
         </div>
 
-        {hasMore && (
-          <div
-            id="infinite-scroll-trigger"
-            className="flex justify-center py-8"
-          >
+        {(loadingMore || hasMore) && (
+          <div className="flex justify-center py-8">
             {loadingMore && (
               <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent"></div>
             )}
