@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { SEO } from '../components/SEO';
 import { formatTimeAgo } from '../utils/dateUtils';
@@ -16,6 +16,7 @@ export function CategoryPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const isInitialMount = useRef(true);
 
   const categoryDisplayName = category ? CATEGORY_NAMES[category.toUpperCase()] || category : '';
 
@@ -27,13 +28,19 @@ export function CategoryPage() {
       const nextPage = page + 1;
       const newArticles = await fetchArticlesByCategory(category, nextPage);
       
-      const existingIds = new Set(articles.map(article => article.id));
-      const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
-      
-      if (uniqueNewArticles.length > 0) {
-        setArticles(prev => [...prev, ...uniqueNewArticles]);
-        setPage(nextPage);
-        setHasMore(uniqueNewArticles.length >= 10);
+      if (newArticles && newArticles.length > 0) {
+        setArticles(prev => {
+          const existingIds = new Set(prev.map(article => article.id));
+          const uniqueNewArticles = newArticles.filter(article => !existingIds.has(article.id));
+          
+          if (uniqueNewArticles.length > 0) {
+            setPage(nextPage);
+            setHasMore(uniqueNewArticles.length >= 10);
+            return [...prev, ...uniqueNewArticles];
+          }
+          setHasMore(false);
+          return prev;
+        });
       } else {
         setHasMore(false);
       }
@@ -42,45 +49,60 @@ export function CategoryPage() {
     } finally {
       setLoadingMore(false);
     }
-  }, [category, page, hasMore, loadingMore, articles]);
+  }, [category, page, hasMore, loadingMore]);
 
   // Reset state when category changes
   useEffect(() => {
-    setArticles([]);
-    setPage(1);
-    setHasMore(true);
-    setLoading(true);
-    setError(null);
-    window.scrollTo(0, 0);
+    if (!isInitialMount.current) {
+      setArticles([]);
+      setPage(1);
+      setHasMore(true);
+      setLoading(true);
+      setError(null);
+      window.scrollTo(0, 0);
+    }
+    isInitialMount.current = false;
   }, [category]);
 
   // Initial load
   useEffect(() => {
+    let mounted = true;
+
     async function loadInitialArticles() {
       try {
         if (!category) {
           throw new Error('Category is required');
         }
         const data = await fetchArticlesByCategory(category, 1);
-        setArticles(data);
-        setHasMore(data.length >= 10);
-        setError(null);
+        if (mounted) {
+          setArticles(data || []);
+          setHasMore((data?.length || 0) >= 10);
+          setError(null);
+        }
       } catch (error) {
-        console.error('Error fetching articles:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch articles');
+        if (mounted) {
+          console.error('Error fetching articles:', error);
+          setError(error instanceof Error ? error.message : 'Failed to fetch articles');
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
 
     loadInitialArticles();
+
+    return () => {
+      mounted = false;
+    };
   }, [category]);
 
   useInfiniteScroll({
     loading: loading || loadingMore,
     hasMore,
     onLoadMore: loadMore,
-    threshold: 500 // Smaller threshold for more responsive loading
+    threshold: 800, // Increased threshold for earlier trigger
   });
 
   if (loading && page === 1) {
@@ -134,7 +156,7 @@ export function CategoryPage() {
                     src={article.image_url}
                     alt={article.title}
                     className="w-full h-full object-cover"
-                    loading="lazy"
+                    loading={index > 5 ? "lazy" : "eager"}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = '/placeholder-image.jpg';
