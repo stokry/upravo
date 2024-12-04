@@ -37,6 +37,7 @@ const isBot = (userAgent: string): boolean => {
     'duckduckbot',
     'skype',
     'slack',
+    'x',
     'embedly'
   ];
   const ua = userAgent.toLowerCase();
