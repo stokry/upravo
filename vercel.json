@@ -1,10 +1,11 @@
+// vercel.json
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "vite build",
   "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/"
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -34,14 +35,8 @@
       ]
     }
   ],
-  "functions": {
-    "middleware": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  },
   "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_KEY": "@supabase_key"
+    "VITE_SUPABASE_URL": "@supabase_url",
+    "VITE_SUPABASE_KEY": "@supabase_key"
   }
 }
