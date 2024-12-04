@@ -33,60 +33,50 @@ export function SEO({
   const fullTitle = isArticle ? `${title} - ${SITE_NAME}` : title;
 
   return (
-    <Helmet prioritizeSeoTags>
-      {/* Force meta tags refresh */}
-      <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <Helmet prioritizeSeoTags={true} encodeSpecialCharacters={true}>
+      {/* Clear existing meta tags */}
+      <meta name="robots" content="index,follow" />
       
       {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
-      <meta name="title" content={fullTitle} key="title" />
-      <meta name="description" content={description} key="description" />
-      <link rel="canonical" href={fullCanonicalUrl} key="canonical" />
+      <meta name="title" content={fullTitle} />
+      <meta name="description" content={description} />
+      <link rel="canonical" href={fullCanonicalUrl} />
 
       {/* Open Graph / Facebook */}
-      <meta property="og:site_name" content={SITE_NAME} key="og:site_name" />
-      <meta property="og:type" content={isArticle ? 'article' : type} key="og:type" />
-      <meta property="og:url" content={fullCanonicalUrl} key="og:url" />
-      <meta property="og:title" content={fullTitle} key="og:title" />
-      <meta property="og:description" content={description} key="og:description" />
-      <meta property="og:image" content={fullImageUrl} key="og:image" />
-      <meta property="og:image:width" content="1200" key="og:image:width" />
-      <meta property="og:image:height" content="630" key="og:image:height" />
+      <meta property="og:site_name" content={SITE_NAME} />
+      <meta property="og:type" content={isArticle ? 'article' : type} />
+      <meta property="og:url" content={fullCanonicalUrl} />
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={fullImageUrl} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:locale" content="hr_HR" />
 
       {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" key="twitter:card" />
-      <meta name="twitter:site" content="@brzi_info" key="twitter:site" />
-      <meta name="twitter:url" content={fullCanonicalUrl} key="twitter:url" />
-      <meta name="twitter:title" content={fullTitle} key="twitter:title" />
-      <meta name="twitter:description" content={description} key="twitter:description" />
-      <meta name="twitter:image" content={fullImageUrl} key="twitter:image" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:url" content={fullCanonicalUrl} />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={fullImageUrl} />
 
       {/* Article Specific Tags */}
       {isArticle && publishedTime && (
         <>
-          <meta property="article:published_time" content={publishedTime} key="article:published_time" />
-          <meta property="article:modified_time" content={publishedTime} key="article:modified_time" />
-          <meta property="article:section" content={section} key="article:section" />
-          <meta property="article:publisher" content={BASE_URL} key="article:publisher" />
+          <meta property="article:published_time" content={publishedTime} />
+          <meta property="article:modified_time" content={publishedTime} />
+          {section && <meta property="article:section" content={section} />}
+          {keywords.map((keyword, index) => (
+            <meta key={`keyword-${index}`} property="article:tag" content={keyword} />
+          ))}
         </>
       )}
 
-      {/* Localization */}
-      <meta property="og:locale" content="hr_HR" key="og:locale" />
-      <html lang="hr" />
-
       {/* Keywords */}
       {keywords.length > 0 && (
-        <meta name="keywords" content={keywords.join(', ')} key="keywords" />
+        <meta name="keywords" content={keywords.join(', ')} />
       )}
-
-      {/* Additional Meta */}
-      <meta name="theme-color" content="#8b1852" key="theme-color" />
-      <meta name="mobile-web-app-capable" content="yes" key="mobile-web-app-capable" />
-      <meta name="apple-mobile-web-app-capable" content="yes" key="apple-mobile-web-app-capable" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" key="apple-mobile-web-app-status-bar-style" />
-      <meta name="robots" content="index, follow, max-image-preview:large" key="robots" />
     </Helmet>
   );
 }
