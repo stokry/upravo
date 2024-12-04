@@ -22,7 +22,13 @@ const isBot = (userAgent: string) => {
   return bots.some(bot => userAgent.toLowerCase().includes(bot.toLowerCase()))
 }
 
-export async function middleware(request: NextRequest) {
+export const config = {
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'
+  ]
+}
+
+export default async function middleware(request: NextRequest) {
   // Create base response
   const response = NextResponse.next()
   
@@ -70,10 +76,4 @@ export async function middleware(request: NextRequest) {
   }
 
   return response
-}
-
-export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'
-  ]
 }
