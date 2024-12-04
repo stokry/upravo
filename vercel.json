@@ -32,7 +32,7 @@
   ],
   "functions": {
     "api/middleware": {
-      "runtime": "@vercel/node@latest",
+      "runtime": "@vercel/node@18.0.0",
       "memory": 1024
     }
   }
