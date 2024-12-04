@@ -1,4 +1,9 @@
-import { NextResponse } from '@vercel/edge';
+export const config = {
+  runtime: 'edge',
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
+  ],
+};
 
 // Bot detection with improved patterns
 const isBot = (userAgent) => {
@@ -33,7 +38,10 @@ export default async function middleware(request) {
   // Early return for non-bot requests
   const userAgent = request.headers.get('user-agent') || ''
   if (!isBot(userAgent)) {
-    return NextResponse.next()
+    return new Response(null, {
+      status: 200,
+      headers: { 'x-middleware-next': '1' }
+    })
   }
 
   try {
@@ -44,13 +52,19 @@ export default async function middleware(request) {
 
     if (!id) {
       console.debug('No article ID found in URL:', url.pathname)
-      return NextResponse.next()
+      return new Response(null, {
+        status: 200,
+        headers: { 'x-middleware-next': '1' }
+      })
     }
 
     // Validate Supabase credentials
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
       console.error('Missing Supabase credentials')
-      return NextResponse.next()
+      return new Response(null, {
+        status: 200,
+        headers: { 'x-middleware-next': '1' }
+      })
     }
 
     // Fetch article data with error handling
@@ -64,7 +78,10 @@ export default async function middleware(request) {
 
     if (!response.ok) {
       console.error('Supabase API error:', response.status)
-      return NextResponse.next()
+      return new Response(null, {
+        status: 200,
+        headers: { 'x-middleware-next': '1' }
+      })
     }
 
     const articles = await response.json()
@@ -72,7 +89,10 @@ export default async function middleware(request) {
 
     if (!article) {
       console.debug('Article not found:', id)
-      return NextResponse.next()
+      return new Response(null, {
+        status: 200,
+        headers: { 'x-middleware-next': '1' }
+      })
     }
 
     // Generate meta tags with encoding
@@ -85,7 +105,10 @@ export default async function middleware(request) {
     const res = await fetch(request.url)
     if (!res.ok) {
       console.error('Failed to fetch HTML:', res.status)
-      return NextResponse.next()
+      return new Response(null, {
+        status: 200,
+        headers: { 'x-middleware-next': '1' }
+      })
     }
 
     let html = await res.text()
@@ -114,7 +137,7 @@ export default async function middleware(request) {
       html = html.replace(headMatch[0], `${headMatch[0]}\n${metaTags}`)
     }
 
-    return new NextResponse(html, {
+    return new Response(html, {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'public, max-age=3600'
@@ -122,12 +145,9 @@ export default async function middleware(request) {
     })
   } catch (error) {
     console.error('Middleware error:', error)
-    return NextResponse.next()
+    return new Response(null, {
+      status: 200,
+      headers: { 'x-middleware-next': '1' }
+    })
   }
-}
-
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
-  ],
 }
