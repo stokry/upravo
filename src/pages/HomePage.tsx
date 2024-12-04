@@ -5,7 +5,6 @@ import { RegionCategorySection } from '../components/RegionCategorySection';
 import { NumberedNewsSection } from '../components/NumberedNewsSection';
 import { MagazineGridSection } from '../components/MagazineGridSection';
 import { HealthSection } from '../components/HealthSection';
-import { SEO } from '../components/SEO';
 import { fetchArticles } from '../utils/api';
 import type { Article } from '../types/Article';
 
@@ -56,12 +55,6 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <SEO 
-        title="Najnovije vijesti"
-        description="Pratite najnovije vijesti i događanja uživo na Brzi.info - vaš izvor za najnovije vijesti iz Hrvatske i svijeta."
-        canonical="/"
-      />
-      
       <main className="py-4 md:py-6 lg:py-8">
         <div className="container px-4 mx-auto">
           {articles.length > 0 && <HeroSection articles={articles} />}

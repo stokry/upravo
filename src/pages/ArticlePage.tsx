@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { SEO } from '../components/SEO';
 import { LatestNewsSidebar } from '../components/LatestNewsSidebar';
 import { fetchArticleBySlug, fetchLatestArticles } from '../utils/api';
 import { parseMarkdown } from '../utils/markdown';
@@ -68,18 +67,6 @@ export function ArticlePage() {
 
   return (
     <main className="py-4 md:py-6 lg:py-8">
-      <SEO 
-        title={article.title}
-        description={article.summary || article.meta_description || `Pročitajte "${article.title}" na Brzi.info - najnovije vijesti iz Hrvatske i svijeta`}
-        canonical={`/${article.category_name.toLowerCase()}/${slug}`}
-        type="article"
-        image={article.image_url || 'https://brzi.info/static/images/default-share.jpg'}
-        publishedTime={new Date(article.date_unparsed).toISOString()}
-        section={article.category_name}
-        keywords={[...article.keywords, article.category_name.toLowerCase(), 'vijesti', 'hrvatska']}
-        isArticle={true}
-      />
-
       <div className="container px-4 mx-auto">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Article Content */}

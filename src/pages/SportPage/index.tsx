@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { SportFilter } from '../../components/SportFilter';
 import { ArticleGrid } from '../../components/ArticleGrid';
 import { LoadMoreButton } from '../../components/LoadMoreButton';
-import { SEO } from '../../components/SEO';
 import { useScrollReset } from '../../hooks/useScrollReset';
 import { fetchArticlesByCategory } from '../../utils/api';
 import type { Article } from '../../types/Article';
@@ -118,13 +117,6 @@ export function SportPage() {
 
   return (
     <div className="h-full">
-      <SEO 
-        title={pageTitle}
-        description={pageDescription}
-        canonical={canonical}
-        type="website"
-      />
-
       <div className="container mx-auto px-4 py-4">
         <SportFilter />
         

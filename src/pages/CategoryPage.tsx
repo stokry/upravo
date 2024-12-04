@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { SEO } from '../components/SEO';
 import { CategoryHeader } from '../components/CategoryHeader';
 import { CategoryArticleGrid } from '../components/CategoryArticleGrid';
 import { LoadMoreButton } from '../components/LoadMoreButton';
@@ -40,13 +39,6 @@ export function CategoryPage() {
 
   return (
     <div className="h-full">
-      <SEO 
-        title={categoryDisplayName}
-        description={`Pratite najnovije vijesti i događanja uživo iz naše ${categoryDisplayName} kategorije. Vaš izvor za najnovije vijesti.`}
-        canonical={`/${category}`}
-        type="website"
-      />
-
       <div className="container mx-auto px-4 py-4">
         <CategoryHeader categoryDisplayName={categoryDisplayName} />
         <div className="mt-6">

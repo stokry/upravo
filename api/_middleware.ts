@@ -1,15 +1,12 @@
 // api/_middleware.ts
-import { createEdgeRouter } from 'next-connect';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from '@vercel/edge';
+import type { NextRequest } from '@vercel/edge';
 
 interface RequestContext {
   params: {
     [key: string]: string | string[];
   };
 }
-
-const router = createEdgeRouter<NextRequest, RequestContext>();
 
 const isBot = (userAgent: string): boolean => {
   const bots = [
@@ -27,7 +24,7 @@ const isBot = (userAgent: string): boolean => {
   return bots.some(bot => userAgent.toLowerCase().includes(bot));
 };
 
-router.get(async (req: NextRequest) => {
+export default async function middleware(req: NextRequest) {
   const userAgent = req.headers.get('user-agent') || '';
   
   if (isBot(userAgent)) {
@@ -93,7 +90,9 @@ router.get(async (req: NextRequest) => {
           return new Response(html, {
             headers: {
               'Content-Type': 'text/html; charset=utf-8',
-              'Cache-Control': 'public, max-age=300'
+              'Cache-Control': 'public, max-age=300',
+              'X-Robots-Tag': 'index, follow',
+              'Link': `<${req.url}>; rel="canonical"`
             }
           });
         }
@@ -102,12 +101,25 @@ router.get(async (req: NextRequest) => {
       console.error('Error processing bot request:', error);
     }
   }
-  
-  return NextResponse.next();
-});
 
-export default router.handler();
+  // Add default SEO headers for non-bot requests
+  const response = NextResponse.next();
+  
+  // Add security headers
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  // Add default SEO meta tags
+  response.headers.set('X-Robots-Tag', 'index, follow');
+  
+  return response;
+}
 
 export const config = {
-  matcher: '/((?!_next/static|_next/image|assets|favicon.ico).*)',
+  matcher: '/((?!assets|static|api|favicon.ico).*)',
 };
