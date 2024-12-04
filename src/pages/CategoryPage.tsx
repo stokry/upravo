@@ -5,6 +5,7 @@ import { CategoryHeader } from '../components/CategoryHeader';
 import { CategoryArticleGrid } from '../components/CategoryArticleGrid';
 import { LoadMoreButton } from '../components/LoadMoreButton';
 import { useArticleLoading } from '../hooks/useArticleLoading';
+import { useScrollReset } from '../hooks/useScrollReset';
 import { CATEGORY_NAMES } from '../config/constants';
 
 export function CategoryPage() {
@@ -17,6 +18,7 @@ export function CategoryPage() {
     loadingMore,
     loadMore
   } = useArticleLoading({ category });
+  useScrollReset();
 
   const categoryDisplayName = category ? CATEGORY_NAMES[category.toUpperCase()] || category : '';
 
@@ -37,7 +39,7 @@ export function CategoryPage() {
   }
 
   return (
-    <main className="py-4 md:py-6 lg:py-8">
+    <div className="h-full">
       <SEO 
         title={categoryDisplayName}
         description={`Pratite najnovije vijesti i događanja uživo iz naše ${categoryDisplayName} kategorije. Vaš izvor za najnovije vijesti.`}
@@ -45,15 +47,19 @@ export function CategoryPage() {
         type="website"
       />
 
-      <div className="container px-4 mx-auto">
+      <div className="container mx-auto px-4 py-4">
         <CategoryHeader categoryDisplayName={categoryDisplayName} />
-        <CategoryArticleGrid articles={articles} />
-        <LoadMoreButton 
-          onClick={loadMore}
-          loading={loadingMore}
-          hasMore={hasMore}
-        />
+        <div className="mt-6">
+          <CategoryArticleGrid articles={articles} />
+          {hasMore && (
+            <LoadMoreButton 
+              onClick={loadMore}
+              loading={loadingMore}
+              hasMore={hasMore}
+            />
+          )}
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

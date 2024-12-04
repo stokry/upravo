@@ -4,12 +4,14 @@ import { SportFilter } from '../../components/SportFilter';
 import { ArticleGrid } from '../../components/ArticleGrid';
 import { LoadMoreButton } from '../../components/LoadMoreButton';
 import { SEO } from '../../components/SEO';
+import { useScrollReset } from '../../hooks/useScrollReset';
 import { fetchArticlesByCategory } from '../../utils/api';
 import type { Article } from '../../types/Article';
 import { SPORT_CATEGORIES } from '../../config/constants';
 
 export function SportPage() {
   const { sport } = useParams<{ sport?: string }>();
+  useScrollReset();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,6 @@ export function SportPage() {
     }
 
     loadInitialArticles();
-    window.scrollTo(0, 0);
   }, [sport]);
 
   const pageTitle = sport 
@@ -105,6 +106,8 @@ export function SportPage() {
     ? `Najnovije vijesti iz ${sport.toLowerCase()}a. Pratite rezultate, analize i novosti.`
     : 'Sve sportske vijesti na jednom mjestu. Pratite najnovije vijesti iz svijeta sporta.';
 
+  const canonical = sport ? `/sport/${sport}` : '/sport';
+
   if (loading && page === 1) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -114,35 +117,32 @@ export function SportPage() {
   }
 
   return (
-    <main className="py-4 md:py-6 lg:py-8">
+    <div className="h-full">
       <SEO 
         title={pageTitle}
         description={pageDescription}
-        canonical={sport ? `/sport/${sport}` : '/sport'}
+        canonical={canonical}
+        type="website"
       />
 
-      <div className="container px-4 mx-auto">
+      <div className="container mx-auto px-4 py-4">
         <SportFilter />
-
+        
         {error ? (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-sm p-4">
-            {error}
-          </div>
-        ) : articles.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 text-gray-600 rounded-sm p-4">
-            Nema dostupnih članaka za ovu kategoriju.
-          </div>
+          <div className="text-red-600 mt-4">{error}</div>
         ) : (
-          <>
+          <div className="mt-6">
             <ArticleGrid articles={articles} />
-            <LoadMoreButton 
-              onClick={loadMore}
-              loading={loadingMore}
-              hasMore={hasMore}
-            />
-          </>
+            {hasMore && (
+              <LoadMoreButton 
+                onClick={loadMore}
+                loading={loadingMore}
+                hasMore={hasMore}
+              />
+            )}
+          </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
