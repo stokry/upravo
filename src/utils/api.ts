@@ -1,5 +1,6 @@
 import type { Article } from '../types/Article';
 import { SUPABASE_URL, SUPABASE_KEY } from '../config/constants';
+import { sanitizeSummary } from './textSanitizer';
 
 function extractJsonContent(content: string): string {
   if (!content) return '';
@@ -27,13 +28,13 @@ function extractSummaryFromJson(summary: string): string {
       const jsonMatch = summary.match(/```json\s*({[\s\S]*?})\s*```/);
       if (jsonMatch && jsonMatch[1]) {
         const parsed = JSON.parse(jsonMatch[1]);
-        return parsed.summary || '';
+        return sanitizeSummary(parsed.summary || '');
       }
     }
-    return summary;
+    return sanitizeSummary(summary);
   } catch (error) {
     console.error('Error extracting summary from JSON:', error);
-    return summary;
+    return sanitizeSummary(summary);
   }
 }
 
