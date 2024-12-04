@@ -108,22 +108,41 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
 }
 
 async function injectMetaTags(html: string, meta: MetaTags): Promise<string> {
-  const headMatch = html.match(/<head>[\s\S]*?<\/head>/);
-  if (!headMatch) return html;
+  // Create new meta content
+  const metaContent = `
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>${meta.title}</title>
+    <meta name="title" content="${meta.title}">
+    <meta name="description" content="${meta.description}">
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="${meta.type}">
+    <meta property="og:url" content="${meta.url}">
+    <meta property="og:title" content="${meta.title}">
+    <meta property="og:description" content="${meta.description}">
+    <meta property="og:image" content="${meta.image}">
+    <meta property="og:site_name" content="Brzi.info">
+    <meta property="og:locale" content="hr_HR">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="${meta.url}">
+    <meta name="twitter:title" content="${meta.title}">
+    <meta name="twitter:description" content="${meta.description}">
+    <meta name="twitter:image" content="${meta.image}">
+    
+    <meta name="keywords" content="${meta.keywords.join(', ')}">
+    <link rel="canonical" href="${meta.url}">`;
 
-  let head = headMatch[0];
-  
-  head = head
-    .replace(/<title>.*?<\/title>/, `<title>${meta.title}</title>`)
-    .replace(/content="__TITLE__"/g, `content="${meta.title}"`)
-    .replace(/content="__DESCRIPTION__"/g, `content="${meta.description}"`)
-    .replace(/content="__TYPE__"/g, `content="${meta.type}"`)
-    .replace(/content="__URL__"/g, `content="${meta.url}"`)
-    .replace(/content="__IMAGE__"/g, `content="${meta.image}"`)
-    .replace(/content="__KEYWORDS__"/g, `content="${meta.keywords.join(', ')}"`)
-    .replace(/href="__URL__"/g, `href="${meta.url}"`);
+  // Replace everything between <head> and the first <script> or <link> tag
+  const newHtml = html.replace(
+    /<head>[\s\S]*?(?=<script|<link)/,
+    `<head>${metaContent}\n    `
+  );
 
-  return html.replace(/<head>[\s\S]*?<\/head>/, head);
+  return newHtml;
 }
 
 export default async function middleware(req: NextRequest) {
