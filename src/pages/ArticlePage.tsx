@@ -55,7 +55,7 @@ export function ArticlePage() {
       </div>
     );
   }
-  
+
   if (error || !article) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -70,15 +70,16 @@ export function ArticlePage() {
     <main className="py-4 md:py-6 lg:py-8">
       <SEO 
         title={article.title}
-        description={article.summary || article.meta_description || ''}
+        description={article.summary || article.meta_description || `Pročitajte "${article.title}" na Brzi.info - najnovije vijesti iz Hrvatske i svijeta`}
         canonical={`/${article.category_name.toLowerCase()}/${slug}`}
         type="article"
-        image={article.image_url}
-        publishedTime={article.date_unparsed}
+        image={article.image_url || 'https://brzi.info/static/images/default-share.jpg'}
+        publishedTime={new Date(article.date_unparsed).toISOString()}
         section={article.category_name}
-        keywords={article.keywords}
+        keywords={[...article.keywords, article.category_name.toLowerCase(), 'vijesti', 'hrvatska']}
         isArticle={true}
       />
+
       <div className="container px-4 mx-auto">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Article Content */}
@@ -96,16 +97,19 @@ export function ArticlePage() {
                   <span className="mx-2">•</span>
                   <time>{formatTimeAgo(article.date_unparsed)}</time>
                 </div>
+
                 {/* Title */}
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">
                   {article.title}
                 </h1>
+
                 {/* Summary */}
                 {article.summary && (
                   <p className="text-lg text-gray-600 mb-6">
                     {article.summary}
                   </p>
                 )}
+
                 {/* Featured Image */}
                 {article.image_url && (
                   <div className="mb-6">
@@ -116,11 +120,13 @@ export function ArticlePage() {
                     />
                   </div>
                 )}
+
                 {/* Article Content */}
                 <div 
                   className="article-content prose max-w-none"
                   dangerouslySetInnerHTML={{ __html: parsedContent }}
                 />
+
                 {/* Keywords */}
                 {article.keywords?.length > 0 && (
                   <div className="mt-8 pt-8 border-t">
@@ -139,6 +145,7 @@ export function ArticlePage() {
               </div>
             </article>
           </div>
+
           {/* Sidebar */}
           <aside className="lg:w-1/4">
             <LatestNewsSidebar articles={latestArticles} />
