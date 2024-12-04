@@ -2,10 +2,13 @@
 import { NextResponse } from '@vercel/edge';
 import type { NextRequest } from '@vercel/edge';
 
-interface RequestContext {
-  params: {
-    [key: string]: string | string[];
-  };
+interface MetaTags {
+  title: string;
+  description: string;
+  image: string;
+  type: string;
+  keywords: string[];
+  url: string;
 }
 
 const isBot = (userAgent: string): boolean => {
@@ -19,70 +22,82 @@ const isBot = (userAgent: string): boolean => {
     'whatsapp',
     'telegram',
     'discord',
-    'slackbot'
+    'slackbot',
+    'viber'
   ];
   return bots.some(bot => userAgent.toLowerCase().includes(bot));
 };
 
-async function generateMetaTags(req: NextRequest) {
+async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
   const url = new URL(req.url);
   const path = url.pathname;
 
   // Default meta tags
-  let meta = {
+  let meta: MetaTags = {
     title: 'Brzi.info - Najnovije vijesti',
     description: 'Pratite najnovije vijesti i događanja uživo na Brzi.info - vaš izvor za najnovije vijesti iz Hrvatske i svijeta.',
     image: 'https://brzi.info/static/images/default-share.jpg',
     type: 'website',
-    keywords: ['vijesti', 'hrvatska', 'sport', 'svijet']
+    keywords: ['vijesti', 'hrvatska', 'sport', 'svijet'],
+    url: req.url
   };
 
-  // Match different page types
-  if (path === '/') {
-    // Homepage - use defaults
-  } else if (path.match(/^\/([^/]+)$/)) {
-    // Category pages
-    const category = path.split('/')[1];
-    meta = {
-      ...meta,
-      title: `${category.charAt(0).toUpperCase() + category.slice(1)} vijesti - Brzi.info`,
-      description: `Pratite najnovije ${category} vijesti i događanja uživo na Brzi.info`,
-      keywords: [category, 'vijesti', 'hrvatska']
-    };
-  } else if (path.match(/\/([^/]+)\/([^/]+)$/)) {
-    // Article pages
-    try {
+  try {
+    // Match different page types
+    if (path === '/') {
+      // Homepage - use defaults
+    } else if (path.match(/^\/([^/]+)$/)) {
+      // Category pages
+      const category = path.split('/')[1];
+      meta = {
+        ...meta,
+        title: `${category.charAt(0).toUpperCase() + category.slice(1)} vijesti - Brzi.info`,
+        description: `Pratite najnovije ${category} vijesti i događanja uživo na Brzi.info`,
+        keywords: [category, 'vijesti', 'hrvatska']
+      };
+    } else if (path.match(/\/([^/]+)\/([^/]+)$/)) {
+      // Article pages
       const matches = path.match(/\/([^/]+)\/([^/]+)$/);
       const slug = matches ? matches[2] : null;
       
       if (slug) {
-        const articleData = await fetch(`${process.env.VITE_API_URL}/api/articles/${slug}`);
+        const articleData = await fetch(
+          `${process.env.VITE_API_URL}/api/articles/${slug}`,
+          {
+            headers: {
+              'Cache-Control': 'public, max-age=30, stale-while-revalidate=60'
+            }
+          }
+        );
+
+        if (!articleData.ok) {
+          throw new Error(`API returned ${articleData.status}`);
+        }
+
         const article = await articleData.json();
         
         if (article) {
           meta = {
             title: article.title,
-            description: article.description || article.summary,
+            description: article.description || article.summary || meta.description,
             image: article.image || meta.image,
             type: 'article',
-            keywords: [...article.keywords, article.category_name.toLowerCase(), 'vijesti']
+            keywords: [...(article.keywords || []), article.category_name?.toLowerCase(), 'vijesti'].filter(Boolean),
+            url: req.url
           };
         }
       }
-    } catch (error) {
-      console.error('Error fetching article data:', error);
     }
+  } catch (error) {
+    console.error('Error generating meta tags:', error);
+    // Keep default meta tags on error
   }
 
   return meta;
 }
 
-export default async function middleware(req: NextRequest) {
-  const userAgent = req.headers.get('user-agent') || '';
-  const meta = await generateMetaTags(req);
-  
-  // Generate HTML with meta tags
-  const html = `
+function generateHTML(meta: MetaTags, indexPath: string): string {
+  return `
     <!DOCTYPE html>
     <html lang="hr">
     <head>
@@ -96,7 +111,7 @@ export default async function middleware(req: NextRequest) {
         
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="${meta.type}">
-        <meta property="og:url" content="${req.url}">
+        <meta property="og:url" content="${meta.url}">
         <meta property="og:title" content="${meta.title}">
         <meta property="og:description" content="${meta.description}">
         <meta property="og:image" content="${meta.image}">
@@ -105,7 +120,7 @@ export default async function middleware(req: NextRequest) {
         
         <!-- Twitter -->
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:url" content="${req.url}">
+        <meta name="twitter:url" content="${meta.url}">
         <meta name="twitter:title" content="${meta.title}">
         <meta name="twitter:description" content="${meta.description}">
         <meta name="twitter:image" content="${meta.image}">
@@ -114,43 +129,55 @@ export default async function middleware(req: NextRequest) {
         <meta name="keywords" content="${meta.keywords.join(', ')}">
         
         <!-- Canonical -->
-        <link rel="canonical" href="${req.url}">
+        <link rel="canonical" href="${meta.url}">
         
         <!-- Security Headers -->
         <meta http-equiv="X-Content-Type-Options" content="nosniff">
         <meta http-equiv="X-Frame-Options" content="DENY">
         <meta http-equiv="X-XSS-Protection" content="1; mode=block">
         <meta name="referrer" content="strict-origin-when-cross-origin">
+
+        <!-- Vite entry point -->
+        <script type="module" crossorigin src="${indexPath}"></script>
     </head>
     <body>
         <div id="root"></div>
-        <script type="module" src="/src/main.tsx"></script>
     </body>
     </html>
   `;
+}
 
-  // If it's a bot, return the pre-rendered HTML
+export default async function middleware(req: NextRequest) {
+  const userAgent = req.headers.get('user-agent') || '';
+  const meta = await generateMetaTags(req);
+  
+  // If it's a bot, return pre-rendered HTML with meta tags
   if (isBot(userAgent)) {
-    return new Response(html, {
+    // Determine the correct path to the Vite entry point
+    const indexPath = '/assets/index.[hash].js'; // You'll need to handle this dynamically
+
+    return new Response(generateHTML(meta, indexPath), {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=300',
+        'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
         'X-Robots-Tag': 'index, follow',
-        'Link': `<${req.url}>; rel="canonical"`
+        'Link': `<${meta.url}>; rel="canonical"`,
+        'Vary': 'User-Agent'
       }
     });
   }
 
-  // For regular users, add meta tags via response headers
+  // For regular users, continue to the app
   const response = NextResponse.next();
   
+  // Add meta tags via response headers
   response.headers.set('X-Meta-Title', meta.title);
   response.headers.set('X-Meta-Description', meta.description);
   response.headers.set('X-Meta-Image', meta.image);
   response.headers.set('X-Meta-Type', meta.type);
   response.headers.set('X-Meta-Keywords', meta.keywords.join(', '));
   
-  // Add security headers
+  // Security headers
   response.headers.set('X-DNS-Prefetch-Control', 'on');
   response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
@@ -158,9 +185,8 @@ export default async function middleware(req: NextRequest) {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-
-  // Add default SEO meta tags
   response.headers.set('X-Robots-Tag', 'index, follow');
+  response.headers.set('Vary', 'User-Agent');
   
   return response;
 }
