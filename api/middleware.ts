@@ -1,6 +1,4 @@
-// middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from '@vercel/edge';
 
 // Bot detection with improved patterns
 const isBot = (userAgent: string) => {
@@ -31,7 +29,7 @@ const encodeHTML = (str: string) => {
     .replace(/'/g, '&#039;')
 }
 
-export async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   // Early return for non-bot requests
   const userAgent = request.headers.get('user-agent') || ''
   if (!isBot(userAgent)) {
@@ -128,7 +126,6 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// Configure middleware paths with improved matcher
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',

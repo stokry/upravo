@@ -33,12 +33,8 @@ export function SEO({
   const fullTitle = isArticle ? `${title} - ${SITE_NAME}` : title;
 
   return (
-    <Helmet 
-      prioritizeSeoTags={true} 
-      encodeSpecialCharacters={true}
-      defaultTitle={SITE_NAME}
-    >
-      {/* Basic Meta Tags */}
+    <Helmet>
+      {/* Primary Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
       <meta name="description" content={description} />
@@ -46,7 +42,7 @@ export function SEO({
 
       {/* Open Graph / Facebook */}
       <meta property="og:site_name" content={SITE_NAME} />
-      <meta property="og:type" content={isArticle ? 'article' : type} />
+      <meta property="og:type" content={type} />
       <meta property="og:url" content={fullCanonicalUrl} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
@@ -62,11 +58,10 @@ export function SEO({
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={fullImageUrl} />
 
-      {/* Article Specific Tags */}
+      {/* Article Specific Meta Tags */}
       {isArticle && publishedTime && (
         <>
           <meta property="article:published_time" content={publishedTime} />
-          <meta property="article:modified_time" content={publishedTime} />
           {section && <meta property="article:section" content={section} />}
           {keywords.map((keyword, index) => (
             <meta key={`keyword-${index}`} property="article:tag" content={keyword} />
@@ -74,14 +69,10 @@ export function SEO({
         </>
       )}
 
-      {/* Keywords */}
+      {/* Additional Meta Tags */}
       {keywords.length > 0 && (
         <meta name="keywords" content={keywords.join(', ')} />
       )}
-
-      {/* Verification Tags */}
-      <meta name="robots" content="index, follow, max-image-preview:large" />
-      <meta name="author" content={SITE_NAME} />
     </Helmet>
   );
 }
