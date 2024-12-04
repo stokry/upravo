@@ -1,6 +1,8 @@
 // api/_middleware.ts
 import { NextResponse } from '@vercel/edge';
 import type { NextRequest } from '@vercel/edge';
+import path from 'path';
+import fs from 'fs/promises';
 
 interface MetaTags {
   title: string;
@@ -72,32 +74,32 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
       const [_, category, slug] = path.match(/\/([^/]+)\/([^/]+)$/) || [];
       
       if (category && slug) {
-        const articleUrl = `https://brzi.info/${category}/${slug}`;
-        const response = await fetch(articleUrl, {
-          headers: {
-            'Cache-Control': 'public, max-age=30, stale-while-revalidate=60'
+        try {
+          const apiUrl = process.env.VITE_API_URL || baseUrl;
+          const articleId = slug.split('-').pop();
+          const response = await fetch(`${apiUrl}/api/articles/${articleId}`, {
+            headers: {
+              'Cache-Control': 'public, max-age=30, stale-while-revalidate=60'
+            }
+          });
+
+          if (!response.ok) throw new Error(`Failed to fetch article: ${response.status}`);
+
+          const article = await response.json();
+          
+          if (article) {
+            meta = {
+              title: article.title,
+              description: article.description || article.summary || meta.description,
+              image: article.image?.startsWith('http') ? article.image : `${baseUrl}${article.image}` || meta.image,
+              type: 'article',
+              keywords: [...(article.keywords || []), article.category_name?.toLowerCase(), 'vijesti'].filter(Boolean),
+              url: `${baseUrl}${path}`
+            };
           }
-        });
-
-        if (!response.ok) throw new Error(`Failed to fetch article: ${response.status}`);
-
-        const html = await response.text();
-        
-        // Extract meta data from HTML
-        const titleMatch = html.match(/<meta property="og:title" content="([^"]*)"/) 
-          || html.match(/<title>(.*?)<\/title>/);
-        const descMatch = html.match(/<meta property="og:description" content="([^"]*)"/) 
-          || html.match(/<meta name="description" content="([^"]*)"/);
-        const imageMatch = html.match(/<meta property="og:image" content="([^"]*)"/);
-        
-        meta = {
-          title: titleMatch?.[1] || meta.title,
-          description: descMatch?.[1] || meta.description,
-          image: imageMatch?.[1] || meta.image,
-          type: 'article',
-          keywords: [category, 'vijesti', 'hrvatska'],
-          url: articleUrl
-        };
+        } catch (error) {
+          console.error('Error fetching article:', error);
+        }
       }
     }
   } catch (error) {
@@ -108,42 +110,42 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
 }
 
 async function injectMetaTags(html: string, meta: MetaTags): Promise<string> {
-  // Replace title
-  html = html.replace(/<title>.*?<\/title>/, `<title>${meta.title}</title>`);
-  
-  // Replace meta tags
-  html = html.replace(/<meta name="title".*?>/, `<meta name="title" content="${meta.title}">`);
-  html = html.replace(/<meta name="description".*?>/, `<meta name="description" content="${meta.description}">`);
-  
-  // Replace OG tags
-  html = html.replace(/<meta property="og:title".*?>/, `<meta property="og:title" content="${meta.title}">`);
-  html = html.replace(/<meta property="og:description".*?>/, `<meta property="og:description" content="${meta.description}">`);
-  html = html.replace(/<meta property="og:image".*?>/, `<meta property="og:image" content="${meta.image}">`);
-  html = html.replace(/<meta property="og:url".*?>/, `<meta property="og:url" content="${meta.url}">`);
-  
-  // Replace Twitter tags
-  html = html.replace(/<meta name="twitter:title".*?>/, `<meta name="twitter:title" content="${meta.title}">`);
-  html = html.replace(/<meta name="twitter:description".*?>/, `<meta name="twitter:description" content="${meta.description}">`);
-  html = html.replace(/<meta name="twitter:image".*?>/, `<meta name="twitter:image" content="${meta.image}">`);
-  html = html.replace(/<meta name="twitter:url".*?>/, `<meta name="twitter:url" content="${meta.url}">`);
-  
-  // Replace keywords and canonical
-  html = html.replace(/<meta name="keywords".*?>/, `<meta name="keywords" content="${meta.keywords.join(', ')}">`);
-  html = html.replace(/<link rel="canonical".*?>/, `<link rel="canonical" href="${meta.url}">`);
+  const replacements = {
+    '__TITLE__': meta.title,
+    '__DESCRIPTION__': meta.description,
+    '__TYPE__': meta.type,
+    '__URL__': meta.url,
+    '__IMAGE__': meta.image,
+    '__KEYWORDS__': meta.keywords.join(', ')
+  };
+
+  // Replace all placeholders
+  Object.entries(replacements).forEach(([placeholder, value]) => {
+    html = html.replace(new RegExp(placeholder, 'g'), value || '');
+  });
+
+  // Remove duplicate canonical tags if they exist
+  const canonicalTags = html.match(/<link rel="canonical".*?>/g) || [];
+  if (canonicalTags.length > 1) {
+    // Keep only the first canonical tag and remove others
+    canonicalTags.slice(1).forEach(tag => {
+      html = html.replace(tag, '');
+    });
+  }
 
   return html;
 }
-
 
 export default async function middleware(req: NextRequest) {
   const userAgent = req.headers.get('user-agent') || '';
   const meta = await generateMetaTags(req);
   
   try {
-    const indexResponse = await fetch(new URL('/index.html', req.url));
-    if (!indexResponse.ok) throw new Error('Failed to fetch index.html');
+    // Get the index.html content
+    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    let template = await fs.promises.readFile(indexPath, 'utf-8');
     
-    const template = await indexResponse.text();
+    // Inject meta tags
     const html = await injectMetaTags(template, meta);
 
     return new Response(html, {
