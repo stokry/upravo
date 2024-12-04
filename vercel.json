@@ -20,14 +20,23 @@
           "value": "DENY"
         },
         {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
+    }
+  ],
+  "routes": [
+    {
+      "src": "/.*",
+      "continue": true,
+      "headers": {
+        "x-robots-tag": "all"
+      }
     }
   ],
   "functions": {
