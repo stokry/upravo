@@ -69,33 +69,35 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
         keywords: [category, 'vijesti', 'hrvatska']
       };
     } else if (path.match(/\/([^/]+)\/([^/]+)$/)) {
-      // Extract category and slug from URL
       const [_, category, slug] = path.match(/\/([^/]+)\/([^/]+)$/) || [];
       
       if (category && slug) {
-        // Use the actual URL structure
         const articleUrl = `https://brzi.info/${category}/${slug}`;
-          {
-            headers: {
-              'Cache-Control': 'public, max-age=30, stale-while-revalidate=60'
-            }
+        const response = await fetch(articleUrl, {
+          headers: {
+            'Cache-Control': 'public, max-age=30, stale-while-revalidate=60'
           }
-        );
+        });
 
-        if (!articleData.ok) throw new Error(`API returned ${articleData.status}`);
+        if (!response.ok) throw new Error(`Failed to fetch article: ${response.status}`);
 
-        const article = await articleData.json();
+        const html = await response.text();
         
-        if (article) {
-          meta = {
-            title: article.title,
-            description: article.description || article.summary || meta.description,
-            image: article.image?.startsWith('http') ? article.image : `${baseUrl}${article.image}` || meta.image,
-            type: 'article',
-            keywords: [...(article.keywords || []), article.category_name?.toLowerCase(), 'vijesti'].filter(Boolean),
-            url: `${baseUrl}${path}`
-          };
-        }
+        // Extract meta data from HTML
+        const titleMatch = html.match(/<meta property="og:title" content="([^"]*)"/) 
+          || html.match(/<title>(.*?)<\/title>/);
+        const descMatch = html.match(/<meta property="og:description" content="([^"]*)"/) 
+          || html.match(/<meta name="description" content="([^"]*)"/);
+        const imageMatch = html.match(/<meta property="og:image" content="([^"]*)"/);
+        
+        meta = {
+          title: titleMatch?.[1] || meta.title,
+          description: descMatch?.[1] || meta.description,
+          image: imageMatch?.[1] || meta.image,
+          type: 'article',
+          keywords: [category, 'vijesti', 'hrvatska'],
+          url: articleUrl
+        };
       }
     }
   } catch (error) {
@@ -106,13 +108,22 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
 }
 
 async function injectMetaTags(html: string, meta: MetaTags): Promise<string> {
-  return html
-    .replace(/__TITLE__/g, meta.title)
-    .replace(/__DESCRIPTION__/g, meta.description)
-    .replace(/__TYPE__/g, meta.type)
-    .replace(/__URL__/g, meta.url)
-    .replace(/__IMAGE__/g, meta.image)
-    .replace(/__KEYWORDS__/g, meta.keywords.join(', '));
+  const headMatch = html.match(/<head>[\s\S]*?<\/head>/);
+  if (!headMatch) return html;
+
+  let head = headMatch[0];
+  
+  head = head
+    .replace(/<title>.*?<\/title>/, `<title>${meta.title}</title>`)
+    .replace(/content="__TITLE__"/g, `content="${meta.title}"`)
+    .replace(/content="__DESCRIPTION__"/g, `content="${meta.description}"`)
+    .replace(/content="__TYPE__"/g, `content="${meta.type}"`)
+    .replace(/content="__URL__"/g, `content="${meta.url}"`)
+    .replace(/content="__IMAGE__"/g, `content="${meta.image}"`)
+    .replace(/content="__KEYWORDS__"/g, `content="${meta.keywords.join(', ')}"`)
+    .replace(/href="__URL__"/g, `href="${meta.url}"`);
+
+  return html.replace(/<head>[\s\S]*?<\/head>/, head);
 }
 
 export default async function middleware(req: NextRequest) {
@@ -120,7 +131,6 @@ export default async function middleware(req: NextRequest) {
   const meta = await generateMetaTags(req);
   
   try {
-    // Fetch the index.html template
     const indexResponse = await fetch(new URL('/index.html', req.url));
     if (!indexResponse.ok) throw new Error('Failed to fetch index.html');
     
