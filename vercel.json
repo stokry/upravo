@@ -2,7 +2,10 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
@@ -10,7 +13,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "public, max-age=3600, s-maxage=86400"
         },
         {
           "key": "X-Frame-Options",
@@ -19,17 +22,18 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }
   ],
   "functions": {
-    "middleware": {
-      "runtime": "@vercel/node@latest"
+    "api/middleware": {
+      "runtime": "@vercel/node@latest",
+      "memory": 1024
     }
-  },
-  "env": {
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_KEY": "@supabase_key"
   }
 }
