@@ -108,42 +108,32 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
 }
 
 async function injectMetaTags(html: string, meta: MetaTags): Promise<string> {
-  // Create new meta content
-  const metaContent = `
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>${meta.title}</title>
-    <meta name="title" content="${meta.title}">
-    <meta name="description" content="${meta.description}">
-    
-    <!-- Open Graph -->
-    <meta property="og:type" content="${meta.type}">
-    <meta property="og:url" content="${meta.url}">
-    <meta property="og:title" content="${meta.title}">
-    <meta property="og:description" content="${meta.description}">
-    <meta property="og:image" content="${meta.image}">
-    <meta property="og:site_name" content="Brzi.info">
-    <meta property="og:locale" content="hr_HR">
-    
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="${meta.url}">
-    <meta name="twitter:title" content="${meta.title}">
-    <meta name="twitter:description" content="${meta.description}">
-    <meta name="twitter:image" content="${meta.image}">
-    
-    <meta name="keywords" content="${meta.keywords.join(', ')}">
-    <link rel="canonical" href="${meta.url}">`;
+  // Replace title
+  html = html.replace(/<title>.*?<\/title>/, `<title>${meta.title}</title>`);
+  
+  // Replace meta tags
+  html = html.replace(/<meta name="title".*?>/, `<meta name="title" content="${meta.title}">`);
+  html = html.replace(/<meta name="description".*?>/, `<meta name="description" content="${meta.description}">`);
+  
+  // Replace OG tags
+  html = html.replace(/<meta property="og:title".*?>/, `<meta property="og:title" content="${meta.title}">`);
+  html = html.replace(/<meta property="og:description".*?>/, `<meta property="og:description" content="${meta.description}">`);
+  html = html.replace(/<meta property="og:image".*?>/, `<meta property="og:image" content="${meta.image}">`);
+  html = html.replace(/<meta property="og:url".*?>/, `<meta property="og:url" content="${meta.url}">`);
+  
+  // Replace Twitter tags
+  html = html.replace(/<meta name="twitter:title".*?>/, `<meta name="twitter:title" content="${meta.title}">`);
+  html = html.replace(/<meta name="twitter:description".*?>/, `<meta name="twitter:description" content="${meta.description}">`);
+  html = html.replace(/<meta name="twitter:image".*?>/, `<meta name="twitter:image" content="${meta.image}">`);
+  html = html.replace(/<meta name="twitter:url".*?>/, `<meta name="twitter:url" content="${meta.url}">`);
+  
+  // Replace keywords and canonical
+  html = html.replace(/<meta name="keywords".*?>/, `<meta name="keywords" content="${meta.keywords.join(', ')}">`);
+  html = html.replace(/<link rel="canonical".*?>/, `<link rel="canonical" href="${meta.url}">`);
 
-  // Replace everything between <head> and the first <script> or <link> tag
-  const newHtml = html.replace(
-    /<head>[\s\S]*?(?=<script|<link)/,
-    `<head>${metaContent}\n    `
-  );
-
-  return newHtml;
+  return html;
 }
+
 
 export default async function middleware(req: NextRequest) {
   const userAgent = req.headers.get('user-agent') || '';
