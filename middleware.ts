@@ -1,6 +1,5 @@
 // middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createMiddleware } from '@vercel/edge';
 
 // Bot detection with improved patterns
 const isBot = (userAgent: string) => {
@@ -22,17 +21,13 @@ const isBot = (userAgent: string) => {
   return bots.some(bot => userAgent.toLowerCase().includes(bot.toLowerCase()))
 }
 
-export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'
-  ]
-}
-
-export default async function middleware(request: NextRequest) {
-  // Create base response
-  const response = NextResponse.next()
+export default createMiddleware(async (request) => {
+  const response = new Response(null, {
+    status: 200,
+    headers: new Headers(request.headers)
+  });
   
-  const userAgent = request.headers.get('user-agent') || ''
+  const userAgent = request.headers.get('user-agent') || '';
   
   // Special handling for social media bots
   if (isBot(userAgent)) {
@@ -75,5 +70,9 @@ export default async function middleware(request: NextRequest) {
     }
   }
 
-  return response
-}
+  return response;
+});
+
+export const config = {
+  matcher: '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'
+};
