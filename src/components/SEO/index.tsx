@@ -33,11 +33,12 @@ export function SEO({
   const fullTitle = isArticle ? `${title} - ${SITE_NAME}` : title;
 
   return (
-    <Helmet prioritizeSeoTags={true} encodeSpecialCharacters={true}>
-      {/* Clear existing meta tags */}
-      <meta name="robots" content="index,follow" />
-      
-      {/* Primary Meta Tags */}
+    <Helmet 
+      prioritizeSeoTags={true} 
+      encodeSpecialCharacters={true}
+      defaultTitle={SITE_NAME}
+    >
+      {/* Basic Meta Tags */}
       <title>{fullTitle}</title>
       <meta name="title" content={fullTitle} />
       <meta name="description" content={description} />
@@ -77,6 +78,10 @@ export function SEO({
       {keywords.length > 0 && (
         <meta name="keywords" content={keywords.join(', ')} />
       )}
+
+      {/* Verification Tags */}
+      <meta name="robots" content="index, follow, max-image-preview:large" />
+      <meta name="author" content={SITE_NAME} />
     </Helmet>
   );
 }
