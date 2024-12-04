@@ -31,7 +31,7 @@
     }
   ],
   "functions": {
-    "api/middleware": {
+    "middleware": {
       "runtime": "@vercel/node@18.0.0",
       "memory": 1024
     }
