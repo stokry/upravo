@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from '@vercel/edge';
+// middleware.ts
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 // Bot detection with improved patterns
 const isBot = (userAgent: string) => {
@@ -14,7 +16,8 @@ const isBot = (userAgent: string) => {
     'TelegramBot',
     'googlebot',
     'bingbot',
-    'yandexbot'
+    'yandexbot',
+    'discordbot'
   ]
   return bots.some(bot => userAgent.toLowerCase().includes(bot.toLowerCase()))
 }
@@ -29,11 +32,26 @@ const encodeHTML = (str: string) => {
     .replace(/'/g, '&#039;')
 }
 
-export default async function middleware(request: NextRequest) {
-  // Early return for non-bot requests
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+  
+  // Add security headers
+  response.headers.set('X-DNS-Prefetch-Control', 'on')
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000')
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  
   const userAgent = request.headers.get('user-agent') || ''
   if (!isBot(userAgent)) {
-    return NextResponse.next()
+    return response
+  }
+
+  // Special handling for social media bots
+  if (userAgent.toLowerCase().includes('facebookexternalhit') || 
+      userAgent.toLowerCase().includes('twitterbot') ||
+      userAgent.toLowerCase().includes('linkedinbot')) {
+    response.headers.set('Cache-Control', 'public, max-age=300')
   }
 
   try {
@@ -44,13 +62,13 @@ export default async function middleware(request: NextRequest) {
 
     if (!id) {
       console.debug('No article ID found in URL:', url.pathname)
-      return NextResponse.next()
+      return response
     }
 
     // Validate Supabase credentials
     if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
       console.error('Missing Supabase credentials')
-      return NextResponse.next()
+      return response
     }
 
     // Fetch article data with error handling
@@ -72,7 +90,7 @@ export default async function middleware(request: NextRequest) {
 
     if (!article) {
       console.debug('Article not found:', id)
-      return NextResponse.next()
+      return response
     }
 
     // Generate meta tags with encoding
@@ -85,7 +103,7 @@ export default async function middleware(request: NextRequest) {
     const res = await fetch(request.url)
     if (!res.ok) {
       console.error('Failed to fetch HTML:', res.status)
-      return NextResponse.next()
+      return response
     }
 
     let html = await res.text()
@@ -122,12 +140,13 @@ export default async function middleware(request: NextRequest) {
     })
   } catch (error) {
     console.error('Middleware error:', error)
-    return NextResponse.next()
+    return response
   }
 }
 
+// Configure middleware paths with improved matcher
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)',
-  ],
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'
+  ]
 }
