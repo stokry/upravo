@@ -1,6 +1,8 @@
 // api/_middleware.ts
 import { NextResponse } from '@vercel/edge';
 import type { NextRequest } from '@vercel/edge';
+import * as path from 'path';
+import * as fs from 'fs';
 
 interface MetaTags {
   title: string;
@@ -23,23 +25,37 @@ const isBot = (userAgent: string): boolean => {
     'telegram',
     'discord',
     'slackbot',
-    'viber'
+    'viber',
+    'pinterest',
+    'vkshare',
+    'w3c_validator',
+    'baiduspider',
+    'yandex',
+    'googlebot',
+    'applebot',
+    'bingbot',
+    'duckduckbot',
+    'skype',
+    'slack',
+    'embedly'
   ];
-  return bots.some(bot => userAgent.toLowerCase().includes(bot));
+  const ua = userAgent.toLowerCase();
+  return bots.some(bot => ua.includes(bot)) || ua.startsWith('mozilla/5.0 (compatible;');
 };
 
 async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
   const url = new URL(req.url);
   const path = url.pathname;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://brzi.info';
 
   // Default meta tags
   let meta: MetaTags = {
     title: 'Brzi.info - Najnovije vijesti',
     description: 'Pratite najnovije vijesti i događanja uživo na Brzi.info - vaš izvor za najnovije vijesti iz Hrvatske i svijeta.',
-    image: 'https://brzi.info/static/images/default-share.jpg',
+    image: `${baseUrl}/static/images/default-share.jpg`,
     type: 'website',
     keywords: ['vijesti', 'hrvatska', 'sport', 'svijet'],
-    url: req.url
+    url: `${baseUrl}${path}`
   };
 
   try {
@@ -61,8 +77,9 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
       const slug = matches ? matches[2] : null;
       
       if (slug) {
+        const apiUrl = process.env.VITE_API_URL || baseUrl;
         const articleData = await fetch(
-          `${process.env.VITE_API_URL}/api/articles/${slug}`,
+          `${apiUrl}/api/articles/${slug}`,
           {
             headers: {
               'Cache-Control': 'public, max-age=30, stale-while-revalidate=60'
@@ -80,10 +97,10 @@ async function generateMetaTags(req: NextRequest): Promise<MetaTags> {
           meta = {
             title: article.title,
             description: article.description || article.summary || meta.description,
-            image: article.image || meta.image,
+            image: article.image?.startsWith('http') ? article.image : `${baseUrl}${article.image}` || meta.image,
             type: 'article',
             keywords: [...(article.keywords || []), article.category_name?.toLowerCase(), 'vijesti'].filter(Boolean),
-            url: req.url
+            url: `${baseUrl}${path}`
           };
         }
       }
@@ -153,8 +170,18 @@ export default async function middleware(req: NextRequest) {
   
   // If it's a bot, return pre-rendered HTML with meta tags
   if (isBot(userAgent)) {
-    // Determine the correct path to the Vite entry point
-    const indexPath = '/assets/index.[hash].js'; // You'll need to handle this dynamically
+    // Get the correct Vite asset path from the build output
+    const manifestPath = path.join(process.cwd(), 'dist', 'manifest.json');
+    let indexPath = '/assets/index.js';
+    
+    try {
+      if (fs.existsSync(manifestPath)) {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+        indexPath = manifest['index.html']?.file || indexPath;
+      }
+    } catch (error) {
+      console.error('Error reading Vite manifest:', error);
+    }
 
     return new Response(generateHTML(meta, indexPath), {
       headers: {
