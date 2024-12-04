@@ -1,12 +1,7 @@
-// vercel.json
+
 {
-  "buildCommand": "vite build",
-  "outputDirectory": "dist",
   "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
@@ -27,16 +22,8 @@
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "X-Robots-Tag",
-          "value": "all"
         }
       ]
     }
-  ],
-  "env": {
-    "VITE_SUPABASE_URL": "@supabase_url",
-    "VITE_SUPABASE_KEY": "@supabase_key"
-  }
+  ]
 }
